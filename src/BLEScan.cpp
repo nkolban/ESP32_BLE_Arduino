@@ -204,7 +204,7 @@ BLEScanResults BLEScan::start(uint32_t duration) {
 
 	m_semaphoreScanEnd.take("start");
 
-	m_scanResults.m_vectorAdvertisedDevices.empty();
+	m_scanResults.m_vectorAdvertisedDevices.clear();
 
 	esp_err_t errRc = ::esp_ble_gap_set_scan_params(&m_scan_params);
 
