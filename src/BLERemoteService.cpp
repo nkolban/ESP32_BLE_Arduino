@@ -196,7 +196,7 @@ void BLERemoteService::removeCharacteristics() {
 	for (auto &myPair : m_characteristicMap) {
 	   delete myPair.second;
 	}
-	m_characteristicMap.empty();
+	m_characteristicMap.clear();
 } // removeCharacteristics
 
 
