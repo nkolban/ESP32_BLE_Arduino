@@ -6,10 +6,10 @@
  */
 #include "sdkconfig.h"
 #if defined(CONFIG_BT_ENABLED)
+#include "BLEAddress.h"
+#include "BLEClient.h"
 #include "BLEUtils.h"
 #include "BLEUUID.h"
-#include "BLEClient.h"
-#include "BLEAddress.h"
 #include "GeneralUtils.h"
 
 #include <freertos/FreeRTOS.h>
@@ -24,7 +24,7 @@
 #include <sstream>
 #include <iomanip>
 
-static const char* LOG_TAG = "BLEUtils";
+static const char* LOG_TAG = "BLEUtils";  // Tag for logging.
 
 /*
 static std::map<std::string, BLEClient *> g_addressMap;
@@ -32,13 +32,509 @@ static std::map<uint16_t, BLEClient *> g_connIdMap;
 */
 
 typedef struct {
-	uint32_t assignedNumber;
+	uint32_t    assignedNumber;
+	std::string name;
+} member_t;
+
+static const member_t members_ids[] = {
+	{0xFE08, "Microsoft"},
+	{0xFE09, "Pillsy, Inc."},
+	{0xFE0A, "ruwido austria gmbh"},
+	{0xFE0B, "ruwido austria gmbh"},
+	{0xFE0C, "Procter & Gamble"},
+	{0xFE0D, "Procter & Gamble"},
+	{0xFE0E, "Setec Pty Ltd"},
+	{0xFE0F, "Philips Lighting B.V."},
+	{0xFE10, "Lapis Semiconductor Co., Ltd."},
+	{0xFE11, "GMC-I Messtechnik GmbH"},
+	{0xFE12, "M-Way Solutions GmbH"},
+	{0xFE13, "Apple Inc."},
+	{0xFE14, "Flextronics International USA Inc."},
+	{0xFE15, "Amazon Fulfillment Services, Inc."},
+	{0xFE16, "Footmarks, Inc."},
+	{0xFE17, "Telit Wireless Solutions GmbH"},
+	{0xFE18, "Runtime, Inc."},
+	{0xFE19, "Google Inc."},
+	{0xFE1A, "Tyto Life LLC"},
+	{0xFE1B, "Tyto Life LLC"},
+	{0xFE1C, "NetMedia, Inc."},
+	{0xFE1D, "Illuminati Instrument Corporation"},
+	{0xFE1E, "Smart Innovations Co., Ltd"},
+	{0xFE1F, "Garmin International, Inc."},
+	{0xFE20, "Emerson"},
+	{0xFE21, "Bose Corporation"},
+	{0xFE22, "Zoll Medical Corporation"},
+	{0xFE23, "Zoll Medical Corporation"},
+	{0xFE24, "August Home Inc"},
+	{0xFE25, "Apple, Inc. "},
+	{0xFE26, "Google Inc."},
+	{0xFE27, "Google Inc."},
+	{0xFE28, "Ayla Networks"},
+	{0xFE29, "Gibson Innovations"},
+	{0xFE2A, "DaisyWorks, Inc."},
+	{0xFE2B, "ITT Industries"},
+	{0xFE2C, "Google Inc."},
+	{0xFE2D, "SMART INNOVATION Co.,Ltd"},
+	{0xFE2E, "ERi,Inc."},
+	{0xFE2F, "CRESCO Wireless, Inc"},
+	{0xFE30, "Volkswagen AG"},
+	{0xFE31, "Volkswagen AG"},
+	{0xFE32, "Pro-Mark, Inc."},
+	{0xFE33, "CHIPOLO d.o.o."},
+	{0xFE34, "SmallLoop LLC"},
+	{0xFE35, "HUAWEI Technologies Co., Ltd"},
+	{0xFE36, "HUAWEI Technologies Co., Ltd"},
+	{0xFE37, "Spaceek LTD"},
+	{0xFE38, "Spaceek LTD"},
+	{0xFE39, "TTS Tooltechnic Systems AG & Co. KG"},
+	{0xFE3A, "TTS Tooltechnic Systems AG & Co. KG"},
+	{0xFE3B, "Dolby Laboratories"},
+	{0xFE3C, "Alibaba"},
+	{0xFE3D, "BD Medical"},
+	{0xFE3E, "BD Medical"},
+	{0xFE3F, "Friday Labs Limited"},
+	{0xFE40, "Inugo Systems Limited"},
+	{0xFE41, "Inugo Systems Limited"},
+	{0xFE42, "Nets A/S "},
+	{0xFE43, "Andreas Stihl AG & Co. KG"},
+	{0xFE44, "SK Telecom "},
+	{0xFE45, "Snapchat Inc"},
+	{0xFE46, "B&O Play A/S "},
+	{0xFE47, "General Motors"},
+	{0xFE48, "General Motors"},
+	{0xFE49, "SenionLab AB"},
+	{0xFE4A, "OMRON HEALTHCARE Co., Ltd."},
+	{0xFE4B, "Philips Lighting B.V."},
+	{0xFE4C, "Volkswagen AG"},
+	{0xFE4D, "Casambi Technologies Oy"},
+	{0xFE4E, "NTT docomo"},
+	{0xFE4F, "Molekule, Inc."},
+	{0xFE50, "Google Inc."},
+	{0xFE51, "SRAM"},
+	{0xFE52, "SetPoint Medical"},
+	{0xFE53, "3M"},
+	{0xFE54, "Motiv, Inc."},
+	{0xFE55, "Google Inc."},
+	{0xFE56, "Google Inc."},
+	{0xFE57, "Dotted Labs"},
+	{0xFE58, "Nordic Semiconductor ASA"},
+	{0xFE59, "Nordic Semiconductor ASA"},
+	{0xFE5A, "Chronologics Corporation"},
+	{0xFE5B, "GT-tronics HK Ltd"},
+	{0xFE5C, "million hunters GmbH"},
+	{0xFE5D, "Grundfos A/S"},
+	{0xFE5E, "Plastc Corporation"},
+	{0xFE5F, "Eyefi, Inc."},
+	{0xFE60, "Lierda Science & Technology Group Co., Ltd."},
+	{0xFE61, "Logitech International SA"},
+	{0xFE62, "Indagem Tech LLC"},
+	{0xFE63, "Connected Yard, Inc."},
+	{0xFE64, "Siemens AG"},
+	{0xFE65, "CHIPOLO d.o.o."},
+	{0xFE66, "Intel Corporation"},
+	{0xFE67, "Lab Sensor Solutions"},
+	{0xFE68, "Qualcomm Life Inc"},
+	{0xFE69, "Qualcomm Life Inc"},
+	{0xFE6A, "Kontakt Micro-Location Sp. z o.o."},
+	{0xFE6B, "TASER International, Inc."},
+	{0xFE6C, "TASER International, Inc."},
+	{0xFE6D, "The University of Tokyo"},
+	{0xFE6E, "The University of Tokyo"},
+	{0xFE6F, "LINE Corporation"},
+	{0xFE70, "Beijing Jingdong Century Trading Co., Ltd."},
+	{0xFE71, "Plume Design Inc"},
+	{0xFE72, "St. Jude Medical, Inc."},
+	{0xFE73, "St. Jude Medical, Inc."},
+	{0xFE74, "unwire"},
+	{0xFE75, "TangoMe"},
+	{0xFE76, "TangoMe"},
+	{0xFE77, "Hewlett-Packard Company"},
+	{0xFE78, "Hewlett-Packard Company"},
+	{0xFE79, "Zebra Technologies"},
+	{0xFE7A, "Bragi GmbH"},
+	{0xFE7B, "Orion Labs, Inc."},
+	{0xFE7C, "Telit Wireless Solutions (Formerly Stollmann E+V GmbH)"},
+	{0xFE7D, "Aterica Health Inc."},
+	{0xFE7E, "Awear Solutions Ltd"},
+	{0xFE7F, "Doppler Lab"},
+	{0xFE80, "Doppler Lab"},
+	{0xFE81, "Medtronic Inc."},
+	{0xFE82, "Medtronic Inc."},
+	{0xFE83, "Blue Bite"},
+	{0xFE84, "RF Digital Corp"},
+	{0xFE85, "RF Digital Corp"},
+	{0xFE86, "HUAWEI Technologies Co., Ltd. ( )"},
+	{0xFE87, "Qingdao Yeelink Information Technology Co., Ltd. ( )"},
+	{0xFE88, "SALTO SYSTEMS S.L."},
+	{0xFE89, "B&O Play A/S"},
+	{0xFE8A, "Apple, Inc."},
+	{0xFE8B, "Apple, Inc."},
+	{0xFE8C, "TRON Forum"},
+	{0xFE8D, "Interaxon Inc."},
+	{0xFE8E, "ARM Ltd"},
+	{0xFE8F, "CSR"},
+	{0xFE90, "JUMA"},
+	{0xFE91, "Shanghai Imilab Technology Co.,Ltd"},
+	{0xFE92, "Jarden Safety & Security"},
+	{0xFE93, "OttoQ Inc."},
+	{0xFE94, "OttoQ Inc."},
+	{0xFE95, "Xiaomi Inc."},
+	{0xFE96, "Tesla Motor Inc."},
+	{0xFE97, "Tesla Motor Inc."},
+	{0xFE98, "Currant, Inc."},
+	{0xFE99, "Currant, Inc."},
+	{0xFE9A, "Estimote"},
+	{0xFE9B, "Samsara Networks, Inc"},
+	{0xFE9C, "GSI Laboratories, Inc."},
+	{0xFE9D, "Mobiquity Networks Inc"},
+	{0xFE9E, "Dialog Semiconductor B.V."},
+	{0xFE9F, "Google Inc."},
+	{0xFEA0, "Google Inc."},
+	{0xFEA1, "Intrepid Control Systems, Inc."},
+	{0xFEA2, "Intrepid Control Systems, Inc."},
+	{0xFEA3, "ITT Industries"},
+	{0xFEA4, "Paxton Access Ltd"},
+	{0xFEA5, "GoPro, Inc."},
+	{0xFEA6, "GoPro, Inc."},
+	{0xFEA7, "UTC Fire and Security"},
+	{0xFEA8, "Savant Systems LLC"},
+	{0xFEA9, "Savant Systems LLC"},
+	{0xFEAA, "Google Inc."},
+	{0xFEAB, "Nokia Corporation"},
+	{0xFEAC, "Nokia Corporation"},
+	{0xFEAD, "Nokia Corporation"},
+	{0xFEAE, "Nokia Corporation"},
+	{0xFEAF, "Nest Labs Inc."},
+	{0xFEB0, "Nest Labs Inc."},
+	{0xFEB1, "Electronics Tomorrow Limited"},
+	{0xFEB2, "Microsoft Corporation"},
+	{0xFEB3, "Taobao"},
+	{0xFEB4, "WiSilica Inc."},
+	{0xFEB5, "WiSilica Inc."},
+	{0xFEB6, "Vencer Co, Ltd"},
+	{0xFEB7, "Facebook, Inc."},
+	{0xFEB8, "Facebook, Inc."},
+	{0xFEB9, "LG Electronics"},
+	{0xFEBA, "Tencent Holdings Limited"},
+	{0xFEBB, "adafruit industries"},
+	{0xFEBC, "Dexcom, Inc. "},
+	{0xFEBD, "Clover Network, Inc."},
+	{0xFEBE, "Bose Corporation"},
+	{0xFEBF, "Nod, Inc."},
+	{0xFEC0, "KDDI Corporation"},
+	{0xFEC1, "KDDI Corporation"},
+	{0xFEC2, "Blue Spark Technologies, Inc."},
+	{0xFEC3, "360fly, Inc."},
+	{0xFEC4, "PLUS Location Systems"},
+	{0xFEC5, "Realtek Semiconductor Corp."},
+	{0xFEC6, "Kocomojo, LLC"},
+	{0xFEC7, "Apple, Inc."},
+	{0xFEC8, "Apple, Inc."},
+	{0xFEC9, "Apple, Inc."},
+	{0xFECA, "Apple, Inc."},
+	{0xFECB, "Apple, Inc."},
+	{0xFECC, "Apple, Inc."},
+	{0xFECD, "Apple, Inc."},
+	{0xFECE, "Apple, Inc."},
+	{0xFECF, "Apple, Inc."},
+	{0xFED0, "Apple, Inc."},
+	{0xFED1, "Apple, Inc."},
+	{0xFED2, "Apple, Inc."},
+	{0xFED3, "Apple, Inc."},
+	{0xFED4, "Apple, Inc."},
+	{0xFED5, "Plantronics Inc."},
+	{0xFED6, "Broadcom Corporation"},
+	{0xFED7, "Broadcom Corporation"},
+	{0xFED8, "Google Inc."},
+	{0xFED9, "Pebble Technology Corporation"},
+	{0xFEDA, "ISSC Technologies Corporation"},
+	{0xFEDB, "Perka, Inc."},
+	{0xFEDC, "Jawbone"},
+	{0xFEDD, "Jawbone"},
+	{0xFEDE, "Coin, Inc."},
+	{0xFEDF, "Design SHIFT"},
+	{0xFEE0, "Anhui Huami Information Technology Co."},
+	{0xFEE1, "Anhui Huami Information Technology Co."},
+	{0xFEE2, "Anki, Inc."},
+	{0xFEE3, "Anki, Inc."},
+	{0xFEE4, "Nordic Semiconductor ASA"},
+	{0xFEE5, "Nordic Semiconductor ASA"},
+	{0xFEE6, "Silvair, Inc."},
+	{0xFEE7, "Tencent Holdings Limited"},
+	{0xFEE8, "Quintic Corp."},
+	{0xFEE9, "Quintic Corp."},
+	{0xFEEA, "Swirl Networks, Inc."},
+	{0xFEEB, "Swirl Networks, Inc."},
+	{0xFEEC, "Tile, Inc."},
+	{0xFEED, "Tile, Inc."},
+	{0xFEEE, "Polar Electro Oy"},
+	{0xFEEF, "Polar Electro Oy"},
+	{0xFEF0, "Intel"},
+	{0xFEF1, "CSR"},
+	{0xFEF2, "CSR"},
+	{0xFEF3, "Google Inc."},
+	{0xFEF4, "Google Inc."},
+	{0xFEF5, "Dialog Semiconductor GmbH"},
+	{0xFEF6, "Wicentric, Inc."},
+	{0xFEF7, "Aplix Corporation"},
+	{0xFEF8, "Aplix Corporation"},
+	{0xFEF9, "PayPal, Inc."},
+	{0xFEFA, "PayPal, Inc."},
+	{0xFEFB, "Telit Wireless Solutions (Formerly Stollmann E+V GmbH)"},
+	{0xFEFC, "Gimbal, Inc."},
+	{0xFEFD, "Gimbal, Inc."},
+	{0xFEFE, "GN ReSound A/S"},
+	{0xFEFF, "GN Netcom"},
+	{0xFFFF, "Reserved"}, /*for testing purposes only*/
+	{0, "" }
+};
+
+typedef struct {
+	uint32_t    assignedNumber;
+	std::string name;
+} gattdescriptor_t;
+
+static const gattdescriptor_t g_descriptor_ids[] = {
+		{0x2905,"Characteristic Aggregate Format"},
+		{0x2900,"Characteristic Extended Properties"},
+		{0x2904,"Characteristic Presentation Format"},
+		{0x2901,"Characteristic User Description"},
+		{0x2902,"Client Characteristic Configuration"},
+		{0x290B,"Environmental Sensing Configuration"},
+		{0x290C,"Environmental Sensing Measurement"},
+		{0x290D,"Environmental Sensing Trigger Setting"},
+		{0x2907,"External Report Reference"},
+		{0x2909,"Number of Digitals"},
+		{0x2908,"Report Reference"},
+		{0x2903,"Server Characteristic Configuration"},
+		{0x290E,"Time Trigger Setting"},
+		{0x2906,"Valid Range"},
+		{0x290A,"Value Trigger Setting"},
+		{ 0, "" }
+};
+
+typedef struct {
+	uint32_t    assignedNumber;
 	std::string name;
 } characteristicMap_t;
 
-static characteristicMap_t g_characteristicsMappings[] = {
-		{0x2a00, "Device Name"},
-		{0x2a01, "Appearance"},
+static const characteristicMap_t g_characteristicsMappings[] = {
+		{0x2A7E,"Aerobic Heart Rate Lower Limit"},
+		{0x2A84,"Aerobic Heart Rate Upper Limit"},
+		{0x2A7F,"Aerobic Threshold"},
+		{0x2A80,"Age"},
+		{0x2A5A,"Aggregate"},
+		{0x2A43,"Alert Category ID"},
+		{0x2A42,"Alert Category ID Bit Mask"},
+		{0x2A06,"Alert Level"},
+		{0x2A44,"Alert Notification Control Point"},
+		{0x2A3F,"Alert Status"},
+		{0x2AB3,"Altitude"},
+		{0x2A81,"Anaerobic Heart Rate Lower Limit"},
+		{0x2A82,"Anaerobic Heart Rate Upper Limit"},
+		{0x2A83,"Anaerobic Threshold"},
+		{0x2A58,"Analog"},
+		{0x2A59,"Analog Output"},
+		{0x2A73,"Apparent Wind Direction"},
+		{0x2A72,"Apparent Wind Speed"},
+		{0x2A01,"Appearance"},
+		{0x2AA3,"Barometric Pressure Trend"},
+		{0x2A19,"Battery Level"},
+		{0x2A1B,"Battery Level State"},
+		{0x2A1A,"Battery Power State"},
+		{0x2A49,"Blood Pressure Feature"},
+		{0x2A35,"Blood Pressure Measurement"},
+		{0x2A9B,"Body Composition Feature"},
+		{0x2A9C,"Body Composition Measurement"},
+		{0x2A38,"Body Sensor Location"},
+		{0x2AA4,"Bond Management Control Point"},
+		{0x2AA5,"Bond Management Features"},
+		{0x2A22,"Boot Keyboard Input Report"},
+		{0x2A32,"Boot Keyboard Output Report"},
+		{0x2A33,"Boot Mouse Input Report"},
+		{0x2AA6,"Central Address Resolution"},
+		{0x2AA8,"CGM Feature"},
+		{0x2AA7,"CGM Measurement"},
+		{0x2AAB,"CGM Session Run Time"},
+		{0x2AAA,"CGM Session Start Time"},
+		{0x2AAC,"CGM Specific Ops Control Point"},
+		{0x2AA9,"CGM Status"},
+		{0x2ACE,"Cross Trainer Data"},
+		{0x2A5C,"CSC Feature"},
+		{0x2A5B,"CSC Measurement"},
+		{0x2A2B,"Current Time"},
+		{0x2A66,"Cycling Power Control Point"},
+		{0x2A66,"Cycling Power Control Point"},
+		{0x2A65,"Cycling Power Feature"},
+		{0x2A65,"Cycling Power Feature"},
+		{0x2A63,"Cycling Power Measurement"},
+		{0x2A64,"Cycling Power Vector"},
+		{0x2A99,"Database Change Increment"},
+		{0x2A85,"Date of Birth"},
+		{0x2A86,"Date of Threshold Assessment"},
+		{0x2A08,"Date Time"},
+		{0x2A0A,"Day Date Time"},
+		{0x2A09,"Day of Week"},
+		{0x2A7D,"Descriptor Value Changed"},
+		{0x2A00,"Device Name"},
+		{0x2A7B,"Dew Point"},
+		{0x2A56,"Digital"},
+		{0x2A57,"Digital Output"},
+		{0x2A0D,"DST Offset"},
+		{0x2A6C,"Elevation"},
+		{0x2A87,"Email Address"},
+		{0x2A0B,"Exact Time 100"},
+		{0x2A0C,"Exact Time 256"},
+		{0x2A88,"Fat Burn Heart Rate Lower Limit"},
+		{0x2A89,"Fat Burn Heart Rate Upper Limit"},
+		{0x2A26,"Firmware Revision String"},
+		{0x2A8A,"First Name"},
+		{0x2AD9,"Fitness Machine Control Point"},
+		{0x2ACC,"Fitness Machine Feature"},
+		{0x2ADA,"Fitness Machine Status"},
+		{0x2A8B,"Five Zone Heart Rate Limits"},
+		{0x2AB2,"Floor Number"},
+		{0x2A8C,"Gender"},
+		{0x2A51,"Glucose Feature"},
+		{0x2A18,"Glucose Measurement"},
+		{0x2A34,"Glucose Measurement Context"},
+		{0x2A74,"Gust Factor"},
+		{0x2A27,"Hardware Revision String"},
+		{0x2A39,"Heart Rate Control Point"},
+		{0x2A8D,"Heart Rate Max"},
+		{0x2A37,"Heart Rate Measurement"},
+		{0x2A7A,"Heat Index"},
+		{0x2A8E,"Height"},
+		{0x2A4C,"HID Control Point"},
+		{0x2A4A,"HID Information"},
+		{0x2A8F,"Hip Circumference"},
+		{0x2ABA,"HTTP Control Point"},
+		{0x2AB9,"HTTP Entity Body"},
+		{0x2AB7,"HTTP Headers"},
+		{0x2AB8,"HTTP Status Code"},
+		{0x2ABB,"HTTPS Security"},
+		{0x2A6F,"Humidity"},
+		{0x2A2A,"IEEE 11073-20601 Regulatory Certification Data List"},
+		{0x2AD2,"Indoor Bike Data"},
+		{0x2AAD,"Indoor Positioning Configuration"},
+		{0x2A36,"Intermediate Cuff Pressure"},
+		{0x2A1E,"Intermediate Temperature"},
+		{0x2A77,"Irradiance"},
+		{0x2AA2,"Language"},
+		{0x2A90,"Last Name"},
+		{0x2AAE,"Latitude"},
+		{0x2A6B,"LN Control Point"},
+		{0x2A6A,"LN Feature"},
+		{0x2AB1,"Local East Coordinate"},
+		{0x2AB0,"Local North Coordinate"},
+		{0x2A0F,"Local Time Information"},
+		{0x2A67,"Location and Speed Characteristic"},
+		{0x2AB5,"Location Name"},
+		{0x2AAF,"Longitude"},
+		{0x2A2C,"Magnetic Declination"},
+		{0x2AA0,"Magnetic Flux Density - 2D"},
+		{0x2AA1,"Magnetic Flux Density - 3D"},
+		{0x2A29,"Manufacturer Name String"},
+		{0x2A91,"Maximum Recommended Heart Rate"},
+		{0x2A21,"Measurement Interval"},
+		{0x2A24,"Model Number String"},
+		{0x2A68,"Navigation"},
+		{0x2A3E,"Network Availability"},
+		{0x2A46,"New Alert"},
+		{0x2AC5,"Object Action Control Point"},
+		{0x2AC8,"Object Changed"},
+		{0x2AC1,"Object First-Created"},
+		{0x2AC3,"Object ID"},
+		{0x2AC2,"Object Last-Modified"},
+		{0x2AC6,"Object List Control Point"},
+		{0x2AC7,"Object List Filter"},
+		{0x2ABE,"Object Name"},
+		{0x2AC4,"Object Properties"},
+		{0x2AC0,"Object Size"},
+		{0x2ABF,"Object Type"},
+		{0x2ABD,"OTS Feature"},
+		{0x2A04,"Peripheral Preferred Connection Parameters"},
+		{0x2A02,"Peripheral Privacy Flag"},
+		{0x2A5F,"PLX Continuous Measurement Characteristic"},
+		{0x2A60,"PLX Features"},
+		{0x2A5E,"PLX Spot-Check Measurement"},
+		{0x2A50,"PnP ID"},
+		{0x2A75,"Pollen Concentration"},
+		{0x2A2F,"Position 2D"},
+		{0x2A30,"Position 3D"},
+		{0x2A69,"Position Quality"},
+		{0x2A6D,"Pressure"},
+		{0x2A4E,"Protocol Mode"},
+		{0x2A62,"Pulse Oximetry Control Point"},
+		{0x2A60,"Pulse Oximetry Pulsatile Event Characteristic"},
+		{0x2A78,"Rainfall"},
+		{0x2A03,"Reconnection Address"},
+		{0x2A52,"Record Access Control Point"},
+		{0x2A14,"Reference Time Information"},
+		{0x2A3A,"Removable"},
+		{0x2A4D,"Report"},
+		{0x2A4B,"Report Map"},
+		{0x2AC9,"Resolvable Private Address Only"},
+		{0x2A92,"Resting Heart Rate"},
+		{0x2A40,"Ringer Control point"},
+		{0x2A41,"Ringer Setting"},
+		{0x2AD1,"Rower Data"},
+		{0x2A54,"RSC Feature"},
+		{0x2A53,"RSC Measurement"},
+		{0x2A55,"SC Control Point"},
+		{0x2A4F,"Scan Interval Window"},
+		{0x2A31,"Scan Refresh"},
+		{0x2A3C,"Scientific Temperature Celsius"},
+		{0x2A10,"Secondary Time Zone"},
+		{0x2A5D,"Sensor Location"},
+		{0x2A25,"Serial Number String"},
+		{0x2A05,"Service Changed"},
+		{0x2A3B,"Service Required"},
+		{0x2A28,"Software Revision String"},
+		{0x2A93,"Sport Type for Aerobic and Anaerobic Thresholds"},
+		{0x2AD0,"Stair Climber Data"},
+		{0x2ACF,"Step Climber Data"},
+		{0x2A3D,"String"},
+		{0x2AD7,"Supported Heart Rate Range"},
+		{0x2AD5,"Supported Inclination Range"},
+		{0x2A47,"Supported New Alert Category"},
+		{0x2AD8,"Supported Power Range"},
+		{0x2AD6,"Supported Resistance Level Range"},
+		{0x2AD4,"Supported Speed Range"},
+		{0x2A48,"Supported Unread Alert Category"},
+		{0x2A23,"System ID"},
+		{0x2ABC,"TDS Control Point"},
+		{0x2A6E,"Temperature"},
+		{0x2A1F,"Temperature Celsius"},
+		{0x2A20,"Temperature Fahrenheit"},
+		{0x2A1C,"Temperature Measurement"},
+		{0x2A1D,"Temperature Type"},
+		{0x2A94,"Three Zone Heart Rate Limits"},
+		{0x2A12,"Time Accuracy"},
+		{0x2A15,"Time Broadcast"},
+		{0x2A13,"Time Source"},
+		{0x2A16,"Time Update Control Point"},
+		{0x2A17,"Time Update State"},
+		{0x2A11,"Time with DST"},
+		{0x2A0E,"Time Zone"},
+		{0x2AD3,"Training Status"},
+		{0x2ACD,"Treadmill Data"},
+		{0x2A71,"True Wind Direction"},
+		{0x2A70,"True Wind Speed"},
+		{0x2A95,"Two Zone Heart Rate Limit"},
+		{0x2A07,"Tx Power Level"},
+		{0x2AB4,"Uncertainty"},
+		{0x2A45,"Unread Alert Status"},
+		{0x2AB6,"URI"},
+		{0x2A9F,"User Control Point"},
+		{0x2A9A,"User Index"},
+		{0x2A76,"UV Index"},
+		{0x2A96,"VO2 Max"},
+		{0x2A97,"Waist Circumference"},
+		{0x2A98,"Weight"},
+		{0x2A9D,"Weight Measurement"},
+		{0x2A9E,"Weight Scale Feature"},
+		{0x2A79,"Wind Chill"},
 		{0, ""}
 };
 
@@ -48,7 +544,7 @@ static characteristicMap_t g_characteristicsMappings[] = {
 typedef struct {
 	std::string name;
 	std::string type;
-	uint32_t assignedNumber;
+	uint32_t    assignedNumber;
 } gattService_t;
 
 
@@ -94,6 +590,7 @@ static const gattService_t g_gattServices[] = {
 	{"", "", 0 }
 };
 
+
 /**
  * @brief Convert characteristic properties into a string representation.
  * @param [in] prop Characteristic properties.
@@ -137,7 +634,7 @@ const char* BLEUtils::addressTypeToString(esp_ble_addr_type_t type) {
 		case BLE_ADDR_TYPE_RPA_RANDOM:
 			return "BLE_ADDR_TYPE_RPA_RANDOM";
 		default:
-			return "Unknown addr_t";
+			return "Unknown esp_ble_addr_type_t";
 	}
 } // addressTypeToString
 
@@ -232,12 +729,11 @@ esp_gatt_srvc_id_t BLEUtils::buildGattSrvcId(esp_gatt_id_t gattId,
  * @param [in] length The length of the data to convert.
  * @return A pointer to the formatted buffer.
  */
-char *BLEUtils::buildHexData(uint8_t *target, uint8_t *source, uint8_t length) {
+char* BLEUtils::buildHexData(uint8_t *target, uint8_t *source, uint8_t length) {
 // Guard against too much data.
 	if (length > 100) {
 		length = 100;
 	}
-
 
 	if (target == nullptr) {
 		target = (uint8_t *)malloc(length * 2 + 1);
@@ -349,12 +845,12 @@ std::string BLEUtils::gattClientEventTypeToString(esp_gattc_cb_event_t eventType
 			return "ESP_GATTC_ENC_CMPL_CB_EVT";
 		case ESP_GATTC_EXEC_EVT:
 			return "ESP_GATTC_EXEC_EVT";
-		case ESP_GATTC_GET_CHAR_EVT:
-			return "ESP_GATTC_GET_CHAR_EVT";
-		case ESP_GATTC_GET_DESCR_EVT:
-			return "ESP_GATTC_GET_DESCR_EVT";
-		case ESP_GATTC_GET_INCL_SRVC_EVT:
-			return "ESP_GATTC_GET_INCL_SRVC_EVT";
+		//case ESP_GATTC_GET_CHAR_EVT:
+//			return "ESP_GATTC_GET_CHAR_EVT";
+		//case ESP_GATTC_GET_DESCR_EVT:
+//			return "ESP_GATTC_GET_DESCR_EVT";
+		//case ESP_GATTC_GET_INCL_SRVC_EVT:
+//			return "ESP_GATTC_GET_INCL_SRVC_EVT";
 		case ESP_GATTC_MULT_ADV_DATA_EVT:
 			return "ESP_GATTC_MULT_ADV_DATA_EVT";
 		case ESP_GATTC_MULT_ADV_DIS_EVT:
@@ -487,24 +983,41 @@ const char* BLEUtils::devTypeToString(esp_bt_dev_type_t type) {
  * @brief Dump the GAP event to the log.
  */
 void BLEUtils::dumpGapEvent(
-	esp_gap_ble_cb_event_t event,
-	esp_ble_gap_cb_param_t *param) {
+	esp_gap_ble_cb_event_t  event,
+	esp_ble_gap_cb_param_t* param) {
 	ESP_LOGD(LOG_TAG, "Received a GAP event: %s", gapEventToString(event));
 	switch(event) {
 		//
 		// ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT
+		// adv_data_cmpl
+		// - esp_bt_status_t
 		//
 		case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %d]",	param->scan_rsp_data_cmpl.status);
+			ESP_LOGD(LOG_TAG, "[status: %d]",	param->adv_data_cmpl.status);
 			break;
 		} // ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT
 
 
 		//
+		// ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT
+		//
+		// adv_data_raw_cmpl
+		// - esp_bt_status_t status
+		//
+		case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT: {
+			ESP_LOGD(LOG_TAG, "[status: %d]",	param->adv_data_raw_cmpl.status);
+			break;
+		} // ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT
+
+
+		//
 		// ESP_GAP_BLE_ADV_START_COMPLETE_EVT
 		//
+		// adv_start_cmpl
+		// - esp_bt_status_t status
+		//
 		case ESP_GAP_BLE_ADV_START_COMPLETE_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %d]",	param->scan_start_cmpl.status);
+			ESP_LOGD(LOG_TAG, "[status: %d]",	param->adv_start_cmpl.status);
 			break;
 		} // ESP_GAP_BLE_ADV_START_COMPLETE_EVT
 
@@ -512,14 +1025,26 @@ void BLEUtils::dumpGapEvent(
 		//
 		// ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT
 		//
+		// adv_stop_cmpl
+		// - esp_bt_status_t status
+		//
 		case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %d]",	param->scan_stop_cmpl.status);
+			ESP_LOGD(LOG_TAG, "[status: %d]",	param->adv_stop_cmpl.status);
 			break;
 		} // ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT
 
 
 		//
 		// ESP_GAP_BLE_AUTH_CMPL_EVT
+		//
+		// auth_cmpl
+		// - esp_bd_addr_t bd_addr
+		// - bool key_present
+		// - esp_link_key key
+		// - bool success
+		// - uint8_t fail_reason
+		// - esp_bd_addr_type_t addr_type
+		// - esp_bt_dev_type_t dev_type
 		//
 		case ESP_GAP_BLE_AUTH_CMPL_EVT: {
 			ESP_LOGD(LOG_TAG, "[bd_addr: %s, key_present: %d, key: ***, key_type: %d, success: %d, fail_reason: %d, addr_type: ***, dev_type: %s]",
@@ -532,6 +1057,18 @@ void BLEUtils::dumpGapEvent(
 			);
 			break;
 		} // ESP_GAP_BLE_AUTH_CMPL_EVT
+
+
+		//
+		// ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT
+		//
+		// clear_bond_dev_cmpl
+		// - esp_bt_status_t status
+		//
+		case ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT: {
+			ESP_LOGD(LOG_TAG, "[status: %d]",	param->clear_bond_dev_cmpl.status);
+			break;
+		} // ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT
 
 
 		//
@@ -562,12 +1099,34 @@ void BLEUtils::dumpGapEvent(
 
 
 		//
+		// ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT
+		//
+		// read_rssi_cmpl
+		// - esp_bt_status_t status
+		// - int8_t rssi
+		// - esp_bd_addr_t remote_addr
+		//
+		case ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT: {
+			ESP_LOGD(LOG_TAG, "[status: %d, rssi: %d, remote_addr: %s]",
+					param->read_rssi_cmpl.status,
+					param->read_rssi_cmpl.rssi,
+					BLEAddress(param->read_rssi_cmpl.remote_addr).toString().c_str()
+			);
+			break;
+		} // ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT
+
+
+		//
 		// ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT
+		//
+		// scan_param_cmpl.
+		// - esp_bt_status_t status
 		//
 		case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT: {
 			ESP_LOGD(LOG_TAG, "[status: %d]",	param->scan_param_cmpl.status);
 			break;
 		} // ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT
+
 
 		//
 		// ESP_GAP_BLE_SCAN_RESULT_EVT
@@ -582,6 +1141,7 @@ void BLEUtils::dumpGapEvent(
 		// - ble_adv
 		// - flag
 		// - num_resps
+		//
 		case ESP_GAP_BLE_SCAN_RESULT_EVT: {
 			switch(param->scan_rst.search_evt) {
 				case ESP_GAP_SEARCH_INQ_RES_EVT: {
@@ -610,12 +1170,64 @@ void BLEUtils::dumpGapEvent(
 
 
 		//
+		// ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT
+		//
+		// scan_rsp_data_cmpl
+		// - esp_bt_status_t status
+		//
+		case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT: {
+			ESP_LOGD(LOG_TAG, "[status: %d]",	param->scan_rsp_data_cmpl.status);
+			break;
+		} // ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT
+
+
+		//
 		// ESP_GAP_BLE_SCAN_START_COMPLETE_EVT
 		//
+		// scan_start_cmpl
+		// - esp_bt_status_t status
 		case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT: {
 			ESP_LOGD(LOG_TAG, "[status: %d]", param->scan_start_cmpl.status);
 			break;
 		} // ESP_GAP_BLE_SCAN_START_COMPLETE_EVT
+
+
+		//
+		// ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT
+		//
+		// scan_stop_cmpl
+		// - esp_bt_status_t status
+		//
+		case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT: {
+			ESP_LOGD(LOG_TAG, "[status: %d]", param->scan_stop_cmpl.status);
+			break;
+		} // ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT
+
+
+		//
+		// ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT
+		//
+		// update_conn_params
+		// - esp_bt_status_t status
+		// - esp_bd_addr_t bda
+		// - uint16_t min_int
+		// - uint16_t max_int
+		// - uint16_t latency
+		// - uint16_t conn_int
+		// - uint16_t timeout
+		//
+		case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT: {
+			ESP_LOGD(LOG_TAG, "[status: %d, bd_addr: %s, min_int: %d, max_int: %d, latency: %d, conn_int: %d, timeout: %d]",
+				param->update_conn_params.status,
+				BLEAddress(param->update_conn_params.bda).toString().c_str(),
+				param->update_conn_params.min_int,
+				param->update_conn_params.max_int,
+				param->update_conn_params.latency,
+				param->update_conn_params.conn_int,
+				param->update_conn_params.timeout
+			);
+			break;
+		} // ESP_GAP_BLE_SCAN_UPDATE_CONN_PARAMS_EVT
 
 
 		//
@@ -626,14 +1238,6 @@ void BLEUtils::dumpGapEvent(
 			break;
 		} // ESP_GAP_BLE_SEC_REQ_EVT
 
-
-		//
-		// ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT
-		//
-		case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %d]", param->scan_stop_cmpl.status);
-			break;
-		} // ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT
 
 		default: {
 			ESP_LOGD(LOG_TAG, "*** dumpGapEvent: Logger not coded ***");
@@ -650,9 +1254,9 @@ void BLEUtils::dumpGapEvent(
  * @param [in] evtParam The data associated with the event.
  */
 void BLEUtils::dumpGattClientEvent(
-	esp_gattc_cb_event_t event,
-	esp_gatt_if_t gattc_if,
-	esp_ble_gattc_cb_param_t *evtParam) {
+	esp_gattc_cb_event_t      event,
+	esp_gatt_if_t             gattc_if,
+	esp_ble_gattc_cb_param_t* evtParam) {
 
 	//esp_ble_gattc_cb_param_t *evtParam = (esp_ble_gattc_cb_param_t *)param;
 	ESP_LOGD(LOG_TAG, "GATT Event: %s", BLEUtils::gattClientEventTypeToString(event).c_str());
@@ -716,6 +1320,7 @@ void BLEUtils::dumpGattClientEvent(
 		// - esp_gatt_id_t        char_id
 		// - esp_gatt_char_prop_t char_prop
 		//
+		/*
 		case ESP_GATTC_GET_CHAR_EVT: {
 
 			// If the status of the event shows that we have a value other than ESP_GATT_OK then the
@@ -742,6 +1347,7 @@ void BLEUtils::dumpGattClientEvent(
 			}
 			break;
 		} // ESP_GATTC_GET_CHAR_EVT
+		*/
 
 		//
 		// ESP_GATTC_NOTIFY_EVT
@@ -749,20 +1355,17 @@ void BLEUtils::dumpGattClientEvent(
 		// notify
 		// uint16_t           conn_id
 		// esp_bd_addr_t      remote_bda
-		// esp_gatt_srvc_id_t srvc_id
-		// esp_gatt_id_t      char_id
-		// esp_gatt_id_t      descr_id
+		// handle             handle
 		// uint16_t           value_len
 		// uint8_t*           value
 		// bool               is_notify
 		//
 		case ESP_GATTC_NOTIFY_EVT: {
-			ESP_LOGD(LOG_TAG, "[conn_id: %d, remote_bda: %s, srvc_id: <%s>, char_id: <%s>, descr_id: <%s>, value_len: %d, is_notify: %d]",
+			ESP_LOGD(LOG_TAG, "[conn_id: %d, remote_bda: %s, handle: %d 0x%.2x, value_len: %d, is_notify: %d]",
 				evtParam->notify.conn_id,
 				BLEAddress(evtParam->notify.remote_bda).toString().c_str(),
-				BLEUtils::gattServiceIdToString(evtParam->notify.srvc_id).c_str(),
-				gattIdToString(evtParam->notify.char_id).c_str(),
-				gattIdToString(evtParam->notify.descr_id).c_str(),
+				evtParam->notify.handle,
+				evtParam->notify.handle,
 				evtParam->notify.value_len,
 				evtParam->notify.is_notify
 			);
@@ -796,20 +1399,16 @@ void BLEUtils::dumpGattClientEvent(
 		// read:
 		// esp_gatt_status_t  status
 		// uint16_t           conn_id
-		// esp_gatt_srvc_id_t srvc_id
-		// esp_gatt_id_t      char_id
-		// esp_gatt_id_t      descr_id
+		// uint16_t           handle
 		// uint8_t*           value
 		// uint16_t           value_type
 		// uint16_t           value_len
 		case ESP_GATTC_READ_CHAR_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %s, conn_id: %d, srvc_id: <%s>, char_id: <%s>, descr_id: <%s>, value_type: 0x%x, value_len: %d]",
+			ESP_LOGD(LOG_TAG, "[status: %s, conn_id: %d, handle: %d 0x%.2x, value_len: %d]",
 				BLEUtils::gattStatusToString(evtParam->read.status).c_str(),
 				evtParam->read.conn_id,
-				BLEUtils::gattServiceIdToString(evtParam->read.srvc_id).c_str(),
-				gattIdToString(evtParam->read.char_id).c_str(),
-				gattIdToString(evtParam->read.descr_id).c_str(),
-				evtParam->read.value_type,
+				evtParam->read.handle,
+				evtParam->read.handle,
 				evtParam->read.value_len
 			);
 			if (evtParam->read.status == ESP_GATT_OK) {
@@ -844,13 +1443,13 @@ void BLEUtils::dumpGattClientEvent(
 		//
 		// reg_for_notify:
 		// - esp_gatt_status_t status
-		// - esp_gatt_srvc_id_t srvc_id
-		// - esp_gatt_id_t char_id
+		// - uint16_t          handle
 		case ESP_GATTC_REG_FOR_NOTIFY_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %s, srvc_id: <%s>, char_id: <%s>]",
+			ESP_LOGD(LOG_TAG, "[status: %s, handle: %d 0x%.2x]",
 				BLEUtils::gattStatusToString(evtParam->reg_for_notify.status).c_str(),
-				BLEUtils::gattServiceIdToString(evtParam->reg_for_notify.srvc_id).c_str(),
-				gattIdToString(evtParam->reg_for_notify.char_id).c_str());
+				evtParam->reg_for_notify.handle,
+				evtParam->reg_for_notify.handle
+			);
 			break;
 		} // ESP_GATTC_REG_FOR_NOTIFY_EVT
 
@@ -874,23 +1473,19 @@ void BLEUtils::dumpGattClientEvent(
 		// ESP_GATTC_SEARCH_RES_EVT
 		//
 		// search_res:
-		// - uint16_t           conn_id
-		// - esp_gatt_srvc_id_t srvc_id
+		// - uint16_t      conn_id
+		// - uint16_t      start_handle
+		// - uint16_t      end_handle
+		// - esp_gatt_id_t srvc_id
 		//
 		case ESP_GATTC_SEARCH_RES_EVT: {
-			std::string name = "";
-			if (evtParam->search_res.srvc_id.id.uuid.len == ESP_UUID_LEN_16) {
-				name = BLEUtils::gattServiceToString(evtParam->search_res.srvc_id.id.uuid.uuid.uuid16);
-			}
-			if (name.length() == 0) {
-				name = "<Unknown Service>";
-			}
-
-			ESP_LOGD(LOG_TAG, "[srvc_id: %s [%s], instanceId: 0x%.2x conn_id: %d]",
-				BLEUtils::gattServiceIdToString(evtParam->search_res.srvc_id).c_str(),
-				name.c_str(),
-				evtParam->search_res.srvc_id.id.inst_id,
-				evtParam->search_res.conn_id);
+			ESP_LOGD(LOG_TAG, "[conn_id: %d, start_handle: %d 0x%.2x, end_handle: %d 0x%.2x, srvc_id: %s",
+				evtParam->search_res.conn_id,
+				evtParam->search_res.start_handle,
+				evtParam->search_res.start_handle,
+				evtParam->search_res.end_handle,
+				evtParam->search_res.end_handle,
+				gattIdToString(evtParam->search_res.srvc_id).c_str());
 			break;
 		} // ESP_GATTC_SEARCH_RES_EVT
 
@@ -899,21 +1494,19 @@ void BLEUtils::dumpGattClientEvent(
 		// ESP_GATTC_WRITE_CHAR_EVT
 		//
 		// write:
-		// esp_gatt_status_t  status
-		// uint16_t           conn_id
-		// esp_gatt_srvc_id_t srvc_id
-		// esp_gatt_id_t      char_id
-		// esp_gatt_id_t      descr_id
+		// - esp_gatt_status_t status
+		// - uint16_t          conn_id
+		// - uint16_t          handle
+		//
 		case ESP_GATTC_WRITE_CHAR_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %s, conn_id: %d, srvc_id: <%s>, char_id: <%s>, descr_id: <%s>]",
+			ESP_LOGD(LOG_TAG, "[status: %s, conn_id: %d, handle: %d 0x%.2x]",
 				BLEUtils::gattStatusToString(evtParam->write.status).c_str(),
 				evtParam->write.conn_id,
-				BLEUtils::gattServiceIdToString(evtParam->write.srvc_id).c_str(),
-				gattIdToString(evtParam->write.char_id).c_str(),
-				gattIdToString(evtParam->write.descr_id).c_str()
+				evtParam->write.handle,
+				evtParam->write.handle
 			);
 			break;
-		}
+		} // ESP_GATTC_WRITE_CHAR_EVT
 
 		default:
 			break;
@@ -932,27 +1525,41 @@ void BLEUtils::dumpGattClientEvent(
  * @param [in] evtParam A union of structures only one of which is populated.
  */
 void BLEUtils::dumpGattServerEvent(
-		esp_gatts_cb_event_t event,
-		esp_gatt_if_t gatts_if,
-		esp_ble_gatts_cb_param_t *evtParam) {
+		esp_gatts_cb_event_t      event,
+		esp_gatt_if_t             gatts_if,
+		esp_ble_gatts_cb_param_t* evtParam) {
 	ESP_LOGD(LOG_TAG, "GATT ServerEvent: %s", BLEUtils::gattServerEventTypeToString(event).c_str());
 	switch(event) {
 
 		case ESP_GATTS_ADD_CHAR_DESCR_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %s, attr_handle: 0x%.2x, service_handle: 0x%.2x, char_uuid: %s]",
+			ESP_LOGD(LOG_TAG, "[status: %s, attr_handle: %d 0x%.2x, service_handle: %d 0x%.2x, char_uuid: %s]",
 				gattStatusToString(evtParam->add_char_descr.status).c_str(),
 				evtParam->add_char_descr.attr_handle,
+				evtParam->add_char_descr.attr_handle,
+				evtParam->add_char_descr.service_handle,
 				evtParam->add_char_descr.service_handle,
 				BLEUUID(evtParam->add_char_descr.char_uuid).toString().c_str());
 			break;
 		} // ESP_GATTS_ADD_CHAR_DESCR_EVT
 
 		case ESP_GATTS_ADD_CHAR_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %s, attr_handle: 0x%.2x, service_handle: 0x%.2x, char_uuid: %s]",
-				gattStatusToString(evtParam->add_char.status).c_str(),
-				evtParam->add_char.attr_handle,
-				evtParam->add_char.service_handle,
-				BLEUUID(evtParam->add_char.char_uuid).toString().c_str());
+			if (evtParam->add_char.status == ESP_GATT_OK) {
+				ESP_LOGD(LOG_TAG, "[status: %s, attr_handle: %d 0x%.2x, service_handle: %d 0x%.2x, char_uuid: %s]",
+					gattStatusToString(evtParam->add_char.status).c_str(),
+					evtParam->add_char.attr_handle,
+					evtParam->add_char.attr_handle,
+					evtParam->add_char.service_handle,
+					evtParam->add_char.service_handle,
+					BLEUUID(evtParam->add_char.char_uuid).toString().c_str());
+			} else {
+				ESP_LOGE(LOG_TAG, "[status: %s, attr_handle: %d 0x%.2x, service_handle: %d 0x%.2x, char_uuid: %s]",
+					gattStatusToString(evtParam->add_char.status).c_str(),
+					evtParam->add_char.attr_handle,
+					evtParam->add_char.attr_handle,
+					evtParam->add_char.service_handle,
+					evtParam->add_char.service_handle,
+					BLEUUID(evtParam->add_char.char_uuid).toString().c_str());
+			}
 			break;
 		} // ESP_GATTS_ADD_CHAR_EVT
 
@@ -987,8 +1594,9 @@ void BLEUtils::dumpGattServerEvent(
 		} // ESP_GATTS_CONNECT_EVT
 
 		case ESP_GATTS_CREATE_EVT: {
-			ESP_LOGD(LOG_TAG, "[status: %s, service_handle: 0x%.2x, service_id: [%s]]",
+			ESP_LOGD(LOG_TAG, "[status: %s, service_handle: %d 0x%.2x, service_id: [%s]]",
 				gattStatusToString(evtParam->create.status).c_str(),
+				evtParam->create.service_handle,
 				evtParam->create.service_handle,
 				gattServiceIdToString(evtParam->create.service_id).c_str());
 			break;
@@ -1108,7 +1716,7 @@ void BLEUtils::dumpGattServerEvent(
 					evtParam->write.need_rsp,
 					evtParam->write.is_prep,
 					evtParam->write.len);
-			char *pHex = buildHexData(nullptr, evtParam->write.value, evtParam->write.len);
+			char* pHex = buildHexData(nullptr, evtParam->write.value, evtParam->write.len);
 			ESP_LOGD(LOG_TAG, "[Data: %s]", pHex);
 			free(pHex);
 			break;
@@ -1139,7 +1747,7 @@ const char* BLEUtils::eventTypeToString(esp_ble_evt_type_t eventType) {
 		case ESP_BLE_EVT_SCAN_RSP:
 			return "ESP_BLE_EVT_SCAN_RSP";
 		default:
-			ESP_LOGD(LOG_TAG, "Unknown esp_ble_evt_type_t: %d", eventType);
+			ESP_LOGD(LOG_TAG, "Unknown esp_ble_evt_type_t: %d (0x%.2x)", eventType, eventType);
 			return "*** Unknown ***";
 	}
 } // eventTypeToString
@@ -1153,12 +1761,38 @@ const char* BLEUtils::eventTypeToString(esp_ble_evt_type_t eventType) {
  */
 const char* BLEUtils::gapEventToString(uint32_t eventType) {
 	switch(eventType) {
-		case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
-			return "ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT";
 		case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
 			return "ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT";
+		case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
+			return "ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT";
 		case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
 			return "ESP_GAP_BLE_ADV_START_COMPLETE_EVT";
+		case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:                      /*!< When stop adv complete, the event comes */
+			return "ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT";
+		case ESP_GAP_BLE_AUTH_CMPL_EVT:                              /* Authentication complete indication. */
+			return "ESP_GAP_BLE_AUTH_CMPL_EVT";
+		case ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT:
+			return "ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT";
+		case ESP_GAP_BLE_GET_BOND_DEV_COMPLETE_EVT:
+			return "ESP_GAP_BLE_GET_BOND_DEV_COMPLETE_EVT";
+		case ESP_GAP_BLE_KEY_EVT:                                    /* BLE  key event for peer device keys */
+			return "ESP_GAP_BLE_KEY_EVT";
+		case ESP_GAP_BLE_LOCAL_IR_EVT:                               /* BLE local IR event */
+			return "ESP_GAP_BLE_LOCAL_IR_EVT";
+		case ESP_GAP_BLE_LOCAL_ER_EVT:                               /* BLE local ER event */
+			return "ESP_GAP_BLE_LOCAL_ER_EVT";
+		case ESP_GAP_BLE_NC_REQ_EVT:                                 /* Numeric Comparison request event */
+			return "ESP_GAP_BLE_NC_REQ_EVT";
+		case ESP_GAP_BLE_OOB_REQ_EVT:                                /* OOB request event */
+			return "ESP_GAP_BLE_OOB_REQ_EVT";
+		case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:                          /* passkey notification event */
+			return "ESP_GAP_BLE_PASSKEY_NOTIF_EVT";
+		case ESP_GAP_BLE_PASSKEY_REQ_EVT:                            /* passkey request event */
+			return "ESP_GAP_BLE_PASSKEY_REQ_EVT";
+		case ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT:
+			return "ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT";
+		case ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT:
+			return "ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT";
 		case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT";
 		case ESP_GAP_BLE_SCAN_RESULT_EVT:
@@ -1169,37 +1803,28 @@ const char* BLEUtils::gapEventToString(uint32_t eventType) {
 			return "ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT";
 		case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SCAN_START_COMPLETE_EVT";
-		case ESP_GAP_BLE_AUTH_CMPL_EVT:                              /* Authentication complete indication. */
-			return "ESP_GAP_BLE_AUTH_CMPL_EVT";
-		case ESP_GAP_BLE_KEY_EVT:                                    /* BLE  key event for peer device keys */
-			return "ESP_GAP_BLE_KEY_EVT";
-		case ESP_GAP_BLE_SEC_REQ_EVT:                                /* BLE  security request */
-			return "ESP_GAP_BLE_SEC_REQ_EVT";
-		case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:                          /* passkey notification event */
-			return "ESP_GAP_BLE_PASSKEY_NOTIF_EVT";
-		case ESP_GAP_BLE_PASSKEY_REQ_EVT:                            /* passkey request event */
-			return "ESP_GAP_BLE_PASSKEY_REQ_EVT";
-		case ESP_GAP_BLE_OOB_REQ_EVT:                                /* OOB request event */
-			return "ESP_GAP_BLE_OOB_REQ_EVT";
-		case ESP_GAP_BLE_LOCAL_IR_EVT:                               /* BLE local IR event */
-			return "ESP_GAP_BLE_LOCAL_IR_EVT";
-		case ESP_GAP_BLE_LOCAL_ER_EVT:                               /* BLE local ER event */
-			return "ESP_GAP_BLE_LOCAL_ER_EVT";
-		case ESP_GAP_BLE_NC_REQ_EVT:                                 /* Numeric Comparison request event */
-			return "ESP_GAP_BLE_NC_REQ_EVT";
-		case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:                      /*!< When stop adv complete, the event comes */
-			return "ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT";
 		case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT";
+		case ESP_GAP_BLE_SEC_REQ_EVT:                                /* BLE  security request */
+			return "ESP_GAP_BLE_SEC_REQ_EVT";
+		case ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT:
+			return "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT";
+		case ESP_GAP_BLE_SET_PKT_LENGTH_COMPLETE_EVT:
+			return "ESP_GAP_BLE_SET_PKT_LENGTH_COMPLETE_EVT";
+		case ESP_GAP_BLE_SET_STATIC_RAND_ADDR_EVT:
+			return "ESP_GAP_BLE_SET_STATIC_RAND_ADDR_EVT";
+		case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+			return "ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT";
+
 		default:
-			ESP_LOGD(LOG_TAG, "gapEventToString: Unknown event type 0x%x", eventType);
+			ESP_LOGD(LOG_TAG, "gapEventToString: Unknown event type %d 0x%.2x", eventType, eventType);
 			return "Unknown event type";
 	}
 } // gapEventToString
 
 
 std::string BLEUtils::gattCharacteristicUUIDToString(uint32_t characteristicUUID) {
-	characteristicMap_t *p = g_characteristicsMappings;
+	const characteristicMap_t *p = g_characteristicsMappings;
 	while (p->name.length() > 0) {
 		if (p->assignedNumber == characteristicUUID) {
 			return p->name;
@@ -1208,6 +1833,39 @@ std::string BLEUtils::gattCharacteristicUUIDToString(uint32_t characteristicUUID
 	}
 	return "Unknown";
 } // gattCharacteristicUUIDToString
+
+
+/**
+ * @brief Given the UUID for a BLE defined descriptor, return its string representation.
+ * @param [in] descriptorUUID UUID of the descriptor to be returned as a string.
+ * @return The string representation of a descriptor UUID.
+ */
+std::string BLEUtils::gattDescriptorUUIDToString(uint32_t descriptorUUID) {
+	gattdescriptor_t* p = (gattdescriptor_t *)g_descriptor_ids;
+	while (p->name.length() > 0) {
+		if (p->assignedNumber == descriptorUUID) {
+			return p->name;
+		}
+		p++;
+	}
+	return "";
+} // gattDescriptorUUIDToString
+
+
+/**
+ * @brief Return a string representation of an esp_gattc_service_elem_t.
+ * @return A string representation of an esp_gattc_service_elem_t.
+ */
+std::string BLEUtils::gattcServiceElementToString(esp_gattc_service_elem_t* pGATTCServiceElement) {
+	std::stringstream ss;
+
+	ss << "[uuid: " << BLEUUID(pGATTCServiceElement->uuid).toString() <<
+		", start_handle: " << pGATTCServiceElement->start_handle <<
+			" 0x" << std::hex << pGATTCServiceElement->start_handle <<
+		", end_handle: " << std::dec << pGATTCServiceElement->end_handle <<
+		  " 0x" << std::hex << pGATTCServiceElement->end_handle << "]";
+	return ss.str();
+} // gattcServiceElementToString
 
 
 /**
@@ -1312,15 +1970,36 @@ std::string BLEUtils::gattStatusToString(esp_gatt_status_t status) {
 			return "ESP_GATT_ALREADY_OPEN";
 		case ESP_GATT_CANCEL:
 			return "ESP_GATT_CANCEL";
+		case ESP_GATT_STACK_RSP:
+			return "ESP_GATT_STACK_RSP";
+		case ESP_GATT_APP_RSP:
+			return "ESP_GATT_APP_RSP";
+		case ESP_GATT_UNKNOWN_ERROR:
+			return "ESP_GATT_UNKNOWN_ERROR";
 		case ESP_GATT_CCC_CFG_ERR:
 			return "ESP_GATT_CCC_CFG_ERR";
 		case ESP_GATT_PRC_IN_PROGRESS:
 			return "ESP_GATT_PRC_IN_PROGRESS";
+		case ESP_GATT_OUT_OF_RANGE:
+			return "ESP_GATT_OUT_OF_RANGE";
 		default:
 			return "Unknown";
 	}
 } // gattStatusToString
 
+
+
+std::string BLEUtils::getMember(uint32_t memberId) {
+	member_t* p = (member_t *)members_ids;
+
+	while (p->name.length() > 0) {
+		if (p->assignedNumber == memberId) {
+				return p->name;
+		}
+		p++;
+	}
+	return "Unknown";
+}
 
 /**
  * @brief convert a GAP search event to a string.

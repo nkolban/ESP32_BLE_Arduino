@@ -48,12 +48,28 @@ BLEClient::BLEClient() {
 	m_haveServices     = false;
 } // BLEClient
 
+
 /**
- * @brief Connect to the partner.
+ * @brief Destructor.
+ */
+BLEClient::~BLEClient() {
+	// We may have allocated service references associated with this client.  Before we are finished
+	// with the client, we must release resources.
+	for (auto &myPair : m_servicesMap) {
+	   delete myPair.second;
+	}
+	m_servicesMap.clear();
+} // ~BLEClient
+
+
+/**
+ * @brief Connect to the partner (BLE Server).
  * @param [in] address The address of the partner.
+ * @return True on success.
  */
 bool BLEClient::connect(BLEAddress address) {
 	ESP_LOGD(LOG_TAG, ">> connect(%s)", address.toString().c_str());
+
 // We need the connection handle that we get from registering the application.  We register the app
 // and then block on its completion.  When the event has arrived, we will have the handle.
 	m_semaphoreRegEvt.take("connect");
@@ -62,10 +78,12 @@ bool BLEClient::connect(BLEAddress address) {
 		ESP_LOGE(LOG_TAG, "esp_ble_gattc_app_register: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 		return false;
 	}
+
 	m_semaphoreRegEvt.wait("connect");
 
 	m_peerAddress = address;
 
+	// Perform the open connection request against the target BLE Server.
 	m_semaphoreOpenEvt.take("connect");
 	errRc = ::esp_ble_gattc_open(
 		getGattcIf(),
@@ -109,36 +127,6 @@ void BLEClient::gattClientEventHandler(
 
 	// Execute handler code based on the type of event received.
 	switch(event) {
-		//
-		// ESP_GATTC_NOTIFY_EVT
-		//
-		// notify
-		// uint16_t           conn_id
-		// esp_bd_addr_t      remote_bda
-		// esp_gatt_srvc_id_t srvc_id
-		// esp_gatt_id_t      char_id
-		// esp_gatt_id_t      descr_id
-		// uint16_t           value_len
-		// uint8_t*           value
-		// bool               is_notify
-		//
-		case ESP_GATTC_NOTIFY_EVT: {
-			BLERemoteService *pBLERemoteService = getService(BLEUUID(evtParam->notify.srvc_id.id.uuid));
-			if (pBLERemoteService == nullptr) {
-				ESP_LOGE(LOG_TAG, "Could not find service with UUID %s for notification", BLEUUID(evtParam->notify.srvc_id.id.uuid).toString().c_str());
-				break;
-			}
-			BLERemoteCharacteristic* pBLERemoteCharacteristic = pBLERemoteService->getCharacteristic(BLEUUID(evtParam->notify.char_id.uuid));
-			if (pBLERemoteCharacteristic == nullptr) {
-				ESP_LOGE(LOG_TAG, "Could not find characteristic with UUID %s for notification", BLEUUID(evtParam->notify.char_id.uuid).toString().c_str());
-				break;
-			}
-			if (pBLERemoteCharacteristic->m_notifyCallback != nullptr) {
-				pBLERemoteCharacteristic->m_notifyCallback(pBLERemoteCharacteristic, evtParam->notify.value, evtParam->notify.value_len, evtParam->notify.is_notify);
-			}
-			break;
-		} // ESP_GATTC_NOTIFY_EVT
-
 		//
 		// ESP_GATTC_OPEN_EVT
 		//
@@ -189,12 +177,19 @@ void BLEClient::gattClientEventHandler(
 		// ESP_GATTC_SEARCH_RES_EVT
 		//
 		// search_res:
-		// - uint16_t           conn_id
-		// - esp_gatt_srvc_id_t srvc_id
+		// - uint16_t      conn_id
+		// - uint16_t      start_handle
+		// - uint16_t      end_handle
+		// - esp_gatt_id_t srvc_id
 		//
 		case ESP_GATTC_SEARCH_RES_EVT: {
 			BLEUUID uuid = BLEUUID(evtParam->search_res.srvc_id);
-			BLERemoteService* pRemoteService = new BLERemoteService(evtParam->search_res.srvc_id, this);
+			BLERemoteService* pRemoteService = new BLERemoteService(
+				evtParam->search_res.srvc_id,
+				this,
+				evtParam->search_res.start_handle,
+				evtParam->search_res.end_handle
+			);
 			m_servicesMap.insert(std::pair<std::string, BLERemoteService *>(uuid.toString(), pRemoteService));
 			break;
 		} // ESP_GATTC_SEARCH_RES_EVT
@@ -205,6 +200,7 @@ void BLEClient::gattClientEventHandler(
 		}
 	} // Switch
 
+	// Pass the request on to all services.
 	for (auto &myPair : m_servicesMap) {
 	   myPair.second->gattClientEventHandler(event, gattc_if, evtParam);
 	}
@@ -215,7 +211,7 @@ void BLEClient::gattClientEventHandler(
 /**
  * @brief Retrieve the address of the peer.
  *
- * Returns the address of the %BLE peer to which this client is connected.
+ * Returns the Bluetooth device address of the %BLE peer to which this client is connected.
  */
 BLEAddress BLEClient::getPeerAddress() {
 	return m_peerAddress;
@@ -232,15 +228,14 @@ esp_gatt_if_t BLEClient::getGattcIf() {
 } // getGattcIf
 
 
-
 /**
- * @brief Get the service object corresponding to the uuid.
+ * @brief Get the service BLE Remote Service instance corresponding to the uuid.
  * @param [in] uuid The UUID of the service being sought.
  * @return A reference to the Service or nullptr if don't know about it.
  */
 BLERemoteService* BLEClient::getService(const char* uuid) {
     return getService(BLEUUID(uuid));
-}
+} // getService
 
 
 /**
@@ -249,6 +244,7 @@ BLERemoteService* BLEClient::getService(const char* uuid) {
  * @return A reference to the Service or nullptr if don't know about it.
  */
 BLERemoteService* BLEClient::getService(BLEUUID uuid) {
+	ESP_LOGD(LOG_TAG, ">> getService: uuid: %s", uuid.toString().c_str());
 // Design
 // ------
 // We wish to retrieve the service given its UUID.  It is possible that we have not yet asked the
@@ -258,12 +254,14 @@ BLERemoteService* BLEClient::getService(BLEUUID uuid) {
 	if (!m_haveServices) {
 		getServices();
 	}
-	std::string v = uuid.toString();
+	std::string uuidStr = uuid.toString();
 	for (auto &myPair : m_servicesMap) {
-		if (myPair.first == v) {
+		if (myPair.first == uuidStr) {
+			ESP_LOGD(LOG_TAG, "<< getService: found the service with uuid: %s", uuid.toString().c_str());
 			return myPair.second;
 		}
-	}
+	} // End of each of the services.
+	ESP_LOGD(LOG_TAG, "<< getService: not found");
 	return nullptr;
 } // getService
 
@@ -287,7 +285,7 @@ std::map<std::string, BLERemoteService*>* BLEClient::getServices() {
 	esp_err_t errRc = esp_ble_gattc_search_service(
 		getGattcIf(),
 		getConnId(),
-		NULL // Filter UUID
+		nullptr            // Filter UUID
 	);
 	m_semaphoreSearchCmplEvt.take("getServices");
 	if (errRc != ESP_OK) {
@@ -319,7 +317,7 @@ std::string BLEClient::toString() {
 	ss << "\nServices:\n";
 	for (auto &myPair : m_servicesMap) {
 		ss << myPair.second->toString() << "\n";
-	   // myPair.second is the value
+	  // myPair.second is the value
 	}
 	return ss.str();
 } // toString

@@ -35,17 +35,16 @@ BLEServer::BLEServer() {
 	m_gatts_if         = -1;
 	m_connectedCount   = 0;
 	m_connId           = -1;
-	BLEDevice::m_bleServer   = this;
 	m_pServerCallbacks = nullptr;
 
-	createApp(0);
+	//createApp(0);
 } // BLEServer
 
 
 void BLEServer::createApp(uint16_t appId) {
 	m_appId = appId;
 	registerApp();
-}
+} // createApp
 
 
 /**
@@ -67,9 +66,10 @@ BLEService* BLEServer::createService(const char* uuid) {
  * With a %BLE server, we can host one or more services.  Invoking this function causes the creation of a definition
  * of a new service.  Every service must have a unique UUID.
  * @param [in] uuid The UUID of the new service.
+ * @param [in] numHandles The maximum number of handles associated with this service.
  * @return A reference to the new service object.
  */
-BLEService* BLEServer::createService(BLEUUID uuid) {
+BLEService* BLEServer::createService(BLEUUID uuid, uint32_t numHandles) {
 	ESP_LOGD(LOG_TAG, ">> createService - %s", uuid.toString().c_str());
 	m_semaphoreCreateEvt.take("createService");
 
@@ -81,7 +81,7 @@ BLEService* BLEServer::createService(BLEUUID uuid) {
 		return nullptr;
 	}
 
-	BLEService* pService = new BLEService(uuid);
+	BLEService* pService = new BLEService(uuid, numHandles);
 	m_serviceMap.setByUUID(uuid, pService); // Save a reference to this service being on this server.
 	pService->executeCreate(this);          // Perform the API calls to actually create the service.
 
@@ -169,7 +169,7 @@ void BLEServer::handleGATTServerEvent(
 		esp_ble_gatts_cb_param_t* param) {
 
 	ESP_LOGD(LOG_TAG, ">> handleGATTServerEvent: %s",
-			BLEUtils::gattServerEventTypeToString(event).c_str());
+		BLEUtils::gattServerEventTypeToString(event).c_str());
 
 	// Invoke the handler for every Service we have.
 	m_serviceMap.handleGATTServerEvent(event, gatts_if, param);
@@ -199,7 +199,7 @@ void BLEServer::handleGATTServerEvent(
 		case ESP_GATTS_REG_EVT: {
 			m_gatts_if = gatts_if;
 
-			m_semaphoreRegisterAppEvt.give();
+			m_semaphoreRegisterAppEvt.give(); // Unlock the mutex waiting for the registration of the app.
 			break;
 		} // ESP_GATTS_REG_EVT
 
@@ -349,5 +349,15 @@ void BLEServer::addCharacteristic(BLECharacteristic *characteristic, BLEService 
 	}
 }
 */
+
+void BLEServerCallbacks::onConnect(BLEServer* pServer) {
+	ESP_LOGD("BLEServerCallbacks", ">> onConnect(): Default");
+	ESP_LOGD("BLEServerCallbacks", "<< onConnect()");
+} // onConnect
+
+void BLEServerCallbacks::onDisconnect(BLEServer* pServer) {
+	ESP_LOGD("BLEServerCallbacks", ">> onDisconnect(): Default");
+	ESP_LOGD("BLEServerCallbacks", "<< onDisconnect()");
+} // onDisconnect
 
 #endif // CONFIG_BT_ENABLED

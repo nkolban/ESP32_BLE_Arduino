@@ -22,7 +22,7 @@ public:
 	BLEUUID(uint32_t uuid);
 	BLEUUID(esp_bt_uuid_t uuid);
 	BLEUUID(uint8_t* pData, size_t size, bool msbFirst);
-	BLEUUID(esp_gatt_srvc_id_t srcvId);
+	BLEUUID(esp_gatt_id_t gattId);
 	BLEUUID();
 	bool           equals(BLEUUID uuid);
 	esp_bt_uuid_t* getNative();
@@ -30,8 +30,8 @@ public:
 	std::string    toString();
 
 private:
-	esp_bt_uuid_t m_uuid;
-	bool          m_valueSet;
+	esp_bt_uuid_t m_uuid;       // The underlying UUID structure that this class wraps.
+	bool          m_valueSet;   // Is there a value set for this instance.
 }; // BLEUUID
 #endif /* CONFIG_BT_ENABLED */
 #endif /* COMPONENTS_CPP_UTILS_BLEUUID_H_ */

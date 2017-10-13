@@ -26,7 +26,7 @@ static void notifyCallback(
     Serial.println(length);
 }
 
-void connectToServer(BLEAddress pAddress) {
+bool connectToServer(BLEAddress pAddress) {
     Serial.print("Forming a connection to ");
     Serial.println(pAddress.toString().c_str());
     
@@ -42,8 +42,9 @@ void connectToServer(BLEAddress pAddress) {
     if (pRemoteService == nullptr) {
       Serial.print("Failed to find our service UUID: ");
       Serial.println(serviceUUID.toString().c_str());
-      return;
+      return false;
     }
+    Serial.println(" - Found our service");
 
 
     // Obtain a reference to the characteristic in the service of the remote BLE server.
@@ -51,8 +52,9 @@ void connectToServer(BLEAddress pAddress) {
     if (pRemoteCharacteristic == nullptr) {
       Serial.print("Failed to find our characteristic UUID: ");
       Serial.println(charUUID.toString().c_str());
-      return;
+      return false;
     }
+    Serial.println(" - Found our characteristic");
 
     // Read the value of the characteristic.
     std::string value = pRemoteCharacteristic->readValue();
@@ -109,9 +111,13 @@ void loop() {
   // BLE Server with which we wish to connect.  Now we connect to it.  Once we are 
   // connected we set the connected flag to be true.
   if (doConnect == true) {
-    connectToServer(*pServerAddress);
+    if (connectToServer(*pServerAddress)) {
+      Serial.println("We are now connected to the BLE Server.");
+      connected = true;
+    } else {
+      Serial.println("We have failed to connect to the server; there is nothin more we will do.");
+    }
     doConnect = false;
-    connected = true;
   }
 
   // If we are connected to a peer BLE Server, update the characteristic each time we are reached

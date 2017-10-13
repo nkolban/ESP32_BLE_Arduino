@@ -7,6 +7,7 @@
 
 #include "GeneralUtils.h"
 #include <esp_log.h>
+#include <esp_system.h>
 #include <string.h>
 #include <stdio.h>
 #include <string>
@@ -104,6 +105,23 @@ bool GeneralUtils::base64Encode(const std::string &in, std::string *out) {
 
 	return (enc_len == out->size());
 } // base64Encode
+
+
+/**
+ * @brief Does the string end with a specific character?
+ * @param [in] str The string to examine.
+ * @param [in] c The character to look form.
+ * @return True if the string ends with the given character.
+ */
+bool GeneralUtils::endsWith(std::string str, char c) {
+	if (str.empty()) {
+		return false;
+	}
+	if (str.at(str.length()-1) == c) {
+		return true;
+	}
+	return false;
+} // endsWidth
 
 
 static int DecodedLength(const std::string &in) {
@@ -261,7 +279,7 @@ void GeneralUtils::hexDump(uint8_t* pData, uint32_t length) {
  * @param [in] length Length of the data (in bytes) to be logged.
  * @return N/A.
  */
-void GeneralUtils::hexDump(uint8_t* pData, uint32_t length) {
+void GeneralUtils::hexDump(const uint8_t* pData, uint32_t length) {
 	char ascii[80];
 	char hex[80];
 	char tempBuf[80];
@@ -386,3 +404,9 @@ const char* GeneralUtils::errorToString(esp_err_t errCode) {
 	return "Unknown ESP_ERR error";
 } // errorToString
 
+/**
+ * @brief Restart the ESP32.
+ */
+void GeneralUtils::restart() {
+	esp_restart();
+} // restart

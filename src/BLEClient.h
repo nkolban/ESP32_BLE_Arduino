@@ -28,6 +28,7 @@ class BLEClientCallbacks;
 class BLEClient {
 public:
 	BLEClient();
+	~BLEClient();
 	bool                                       connect(BLEAddress address);
 	void                                       disconnect();
 	BLEAddress                                 getPeerAddress();
@@ -39,8 +40,9 @@ public:
 
 private:
 	friend class BLEDevice;
-	friend class BLERemoteCharacteristic;
 	friend class BLERemoteService;
+	friend class BLERemoteCharacteristic;
+	friend class BLERemoteDescriptor;
 
 	void                                       gattClientEventHandler(
 		esp_gattc_cb_event_t event,
