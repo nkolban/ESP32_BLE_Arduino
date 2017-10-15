@@ -20,6 +20,9 @@
 #include <string>
 #include <gatt_api.h>
 #include <unordered_set>
+#ifdef ARDUINO_ARCH_ESP32
+#include "esp32-hal-log.h"
+#endif
 
 static const char* LOG_TAG = "BLEServer";
 
@@ -198,7 +201,6 @@ void BLEServer::handleGATTServerEvent(
 		// - uint16_t app_id
 		case ESP_GATTS_REG_EVT: {
 			m_gatts_if = gatts_if;
-
 			m_semaphoreRegisterAppEvt.give(); // Unlock the mutex waiting for the registration of the app.
 			break;
 		} // ESP_GATTS_REG_EVT
