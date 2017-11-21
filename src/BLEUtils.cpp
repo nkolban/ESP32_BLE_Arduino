@@ -24,6 +24,10 @@
 #include <sstream>
 #include <iomanip>
 
+#ifdef ARDUINO_ARCH_ESP32
+#include "esp32-hal-log.h"
+#endif
+
 static const char* LOG_TAG = "BLEUtils";  // Tag for logging.
 
 /*
@@ -33,7 +37,7 @@ static std::map<uint16_t, BLEClient *> g_connIdMap;
 
 typedef struct {
 	uint32_t    assignedNumber;
-	std::string name;
+	const char* name;
 } member_t;
 
 static const member_t members_ids[] = {
@@ -291,7 +295,7 @@ static const member_t members_ids[] = {
 
 typedef struct {
 	uint32_t    assignedNumber;
-	std::string name;
+	const char* name;
 } gattdescriptor_t;
 
 static const gattdescriptor_t g_descriptor_ids[] = {
@@ -315,7 +319,7 @@ static const gattdescriptor_t g_descriptor_ids[] = {
 
 typedef struct {
 	uint32_t    assignedNumber;
-	std::string name;
+	const char* name;
 } characteristicMap_t;
 
 static const characteristicMap_t g_characteristicsMappings[] = {
@@ -542,8 +546,8 @@ static const characteristicMap_t g_characteristicsMappings[] = {
  * @brief Mapping from service ids to names
  */
 typedef struct {
-	std::string name;
-	std::string type;
+	const char* name;
+	const char* type;
 	uint32_t    assignedNumber;
 } gattService_t;
 
@@ -634,9 +638,35 @@ const char* BLEUtils::addressTypeToString(esp_ble_addr_type_t type) {
 		case BLE_ADDR_TYPE_RPA_RANDOM:
 			return "BLE_ADDR_TYPE_RPA_RANDOM";
 		default:
-			return "Unknown esp_ble_addr_type_t";
+			return " esp_ble_addr_type_t";
 	}
 } // addressTypeToString
+
+
+/**
+ * @brief Convert the BLE Advertising Data flags to a string.
+ * @param adFlags The flags to convert
+ * @return std::string A string representation of the advertising flags.
+ */
+std::string BLEUtils::adFlagsToString(uint8_t adFlags) {
+	std::stringstream ss;
+	if (adFlags & (1<<0)) {
+		ss << "[LE Limited Discoverable Mode] ";
+	}
+	if (adFlags & (1<<1)) {
+		ss << "[LE General Discoverable Mode] ";
+	}
+	if (adFlags & (1<<2)) {
+		ss << "[BR/EDR Not Supported] ";
+	}
+	if (adFlags & (1<<3)) {
+		ss << "[Simultaneous LE and BR/EDR to Same Device Capable (Controller)] ";
+	}
+	if (adFlags & (1<<4)) {
+		ss << "[Simultaneous LE and BR/EDR to Same Device Capable (Host)] ";
+	}
+	return ss.str();
+} // adFlagsToString
 
 
 /**
@@ -649,59 +679,84 @@ const char* BLEUtils::addressTypeToString(esp_ble_addr_type_t type) {
  */
 const char* BLEUtils::advTypeToString(uint8_t advType) {
 	switch(advType) {
-		case ESP_BLE_AD_TYPE_FLAG:
+		case ESP_BLE_AD_TYPE_FLAG:                   // 0x01
 			return "ESP_BLE_AD_TYPE_FLAG";
-		case ESP_BLE_AD_TYPE_16SRV_PART:
+
+		case ESP_BLE_AD_TYPE_16SRV_PART:             // 0x02
 			return "ESP_BLE_AD_TYPE_16SRV_PART";
-		case ESP_BLE_AD_TYPE_16SRV_CMPL:
+
+		case ESP_BLE_AD_TYPE_16SRV_CMPL:             // 0x03
 			return "ESP_BLE_AD_TYPE_16SRV_CMPL";
-		case ESP_BLE_AD_TYPE_32SRV_PART:
+
+		case ESP_BLE_AD_TYPE_32SRV_PART:             // 0x04
 			return "ESP_BLE_AD_TYPE_32SRV_PART";
-		case ESP_BLE_AD_TYPE_32SRV_CMPL:
+
+		case ESP_BLE_AD_TYPE_32SRV_CMPL:             // 0x05
 			return "ESP_BLE_AD_TYPE_32SRV_CMPL";
-		case ESP_BLE_AD_TYPE_128SRV_PART:
+
+		case ESP_BLE_AD_TYPE_128SRV_PART:            // 0x06
 			return "ESP_BLE_AD_TYPE_128SRV_PART";
-		case ESP_BLE_AD_TYPE_128SRV_CMPL:
+
+		case ESP_BLE_AD_TYPE_128SRV_CMPL:            // 0x07
 			return "ESP_BLE_AD_TYPE_128SRV_CMPL";
-		case ESP_BLE_AD_TYPE_NAME_SHORT:
+
+		case ESP_BLE_AD_TYPE_NAME_SHORT:             // 0x08
 			return "ESP_BLE_AD_TYPE_NAME_SHORT";
-		case ESP_BLE_AD_TYPE_NAME_CMPL:
+
+		case ESP_BLE_AD_TYPE_NAME_CMPL:              // 0x09
 			return "ESP_BLE_AD_TYPE_NAME_CMPL";
-		case ESP_BLE_AD_TYPE_TX_PWR:
+
+		case ESP_BLE_AD_TYPE_TX_PWR:                 // 0x0a
 			return "ESP_BLE_AD_TYPE_TX_PWR";
-		case ESP_BLE_AD_TYPE_DEV_CLASS:
+
+		case ESP_BLE_AD_TYPE_DEV_CLASS:              // 0x0b
 			return "ESP_BLE_AD_TYPE_DEV_CLASS";
-		case ESP_BLE_AD_TYPE_SM_TK:
+
+		case ESP_BLE_AD_TYPE_SM_TK:                  // 0x10
 			return "ESP_BLE_AD_TYPE_SM_TK";
-		case ESP_BLE_AD_TYPE_SM_OOB_FLAG:
+
+		case ESP_BLE_AD_TYPE_SM_OOB_FLAG:            // 0x11
 			return "ESP_BLE_AD_TYPE_SM_OOB_FLAG";
-		case ESP_BLE_AD_TYPE_INT_RANGE:
+
+		case ESP_BLE_AD_TYPE_INT_RANGE:              // 0x12
 			return "ESP_BLE_AD_TYPE_INT_RANGE";
-		case ESP_BLE_AD_TYPE_SOL_SRV_UUID:
+
+		case ESP_BLE_AD_TYPE_SOL_SRV_UUID:           // 0x14
 			return "ESP_BLE_AD_TYPE_SOL_SRV_UUID";
-		case ESP_BLE_AD_TYPE_128SOL_SRV_UUID:
+
+		case ESP_BLE_AD_TYPE_128SOL_SRV_UUID:        // 0x15
 			return "ESP_BLE_AD_TYPE_128SOL_SRV_UUID";
-		case ESP_BLE_AD_TYPE_SERVICE_DATA:
+
+		case ESP_BLE_AD_TYPE_SERVICE_DATA:           // 0x16
 			return "ESP_BLE_AD_TYPE_SERVICE_DATA";
-		case ESP_BLE_AD_TYPE_PUBLIC_TARGET:
+
+		case ESP_BLE_AD_TYPE_PUBLIC_TARGET:          // 0x17
 			return "ESP_BLE_AD_TYPE_PUBLIC_TARGET";
-		case ESP_BLE_AD_TYPE_RANDOM_TARGET:
-			return "ESP_BLE_Amap1D_TYPE_RANDOM_TARGET";
-		case ESP_BLE_AD_TYPE_APPEARANCE:
+
+		case ESP_BLE_AD_TYPE_RANDOM_TARGET:          // 0x18
+			return "ESP_BLE_AD_TYPE_RANDOM_TARGET";
+
+		case ESP_BLE_AD_TYPE_APPEARANCE:             // 0x19
 			return "ESP_BLE_AD_TYPE_APPEARANCE";
-		case ESP_BLE_AD_TYPE_ADV_INT:
+
+		case ESP_BLE_AD_TYPE_ADV_INT:                // 0x1a
 			return "ESP_BLE_AD_TYPE_ADV_INT";
+
 		case ESP_BLE_AD_TYPE_32SOL_SRV_UUID:
 			return "ESP_BLE_AD_TYPE_32SOL_SRV_UUID";
-		case ESP_BLE_AD_TYPE_32SERVICE_DATA:
+
+		case ESP_BLE_AD_TYPE_32SERVICE_DATA:         // 0x20
 			return "ESP_BLE_AD_TYPE_32SERVICE_DATA";
-		case ESP_BLE_AD_TYPE_128SERVICE_DATA:
+
+		case ESP_BLE_AD_TYPE_128SERVICE_DATA:        // 0x21
 			return "ESP_BLE_AD_TYPE_128SERVICE_DATA";
-		case ESP_BLE_AD_MANUFACTURER_SPECIFIC_TYPE:
+
+		case ESP_BLE_AD_MANUFACTURER_SPECIFIC_TYPE:  // 0xff
 			return "ESP_BLE_AD_MANUFACTURER_SPECIFIC_TYPE";
+
 		default:
-			ESP_LOGD(LOG_TAG, "Unknown adv data type: 0x%x", advType);
-			return "Unknown";
+			ESP_LOGD(LOG_TAG, " adv data type: 0x%x", advType);
+			return "";
 	} // End switch
 } // advTypeToString
 
@@ -909,52 +964,76 @@ std::string BLEUtils::gattServerEventTypeToString(esp_gatts_cb_event_t eventType
 	switch(eventType) {
 	case ESP_GATTS_REG_EVT:
 		return "ESP_GATTS_REG_EVT";
+
 	case ESP_GATTS_READ_EVT:
 		return "ESP_GATTS_READ_EVT";
+
 	case ESP_GATTS_WRITE_EVT:
 		return "ESP_GATTS_WRITE_EVT";
+
 	case ESP_GATTS_EXEC_WRITE_EVT:
 		return "ESP_GATTS_EXEC_WRITE_EVT";
+
 	case ESP_GATTS_MTU_EVT:
 		return "ESP_GATTS_MTU_EVT";
+
 	case ESP_GATTS_CONF_EVT:
 		return "ESP_GATTS_CONF_EVT";
+
 	case ESP_GATTS_UNREG_EVT:
 		return "ESP_GATTS_UNREG_EVT";
+
 	case ESP_GATTS_CREATE_EVT:
 		return "ESP_GATTS_CREATE_EVT";
+
 	case ESP_GATTS_ADD_INCL_SRVC_EVT:
 		return "ESP_GATTS_ADD_INCL_SRVC_EVT";
+
 	case ESP_GATTS_ADD_CHAR_EVT:
 		return "ESP_GATTS_ADD_CHAR_EVT";
+
 	case ESP_GATTS_ADD_CHAR_DESCR_EVT:
 		return "ESP_GATTS_ADD_CHAR_DESCR_EVT";
+
 	case ESP_GATTS_DELETE_EVT:
 		return "ESP_GATTS_DELETE_EVT";
+
 	case ESP_GATTS_START_EVT:
 		return "ESP_GATTS_START_EVT";
+
 	case ESP_GATTS_STOP_EVT:
 		return "ESP_GATTS_STOP_EVT";
+
 	case ESP_GATTS_CONNECT_EVT:
 		return "ESP_GATTS_CONNECT_EVT";
+
 	case ESP_GATTS_DISCONNECT_EVT:
 		return "ESP_GATTS_DISCONNECT_EVT";
+
 	case ESP_GATTS_OPEN_EVT:
 		return "ESP_GATTS_OPEN_EVT";
+
 	case ESP_GATTS_CANCEL_OPEN_EVT:
 		return "ESP_GATTS_CANCEL_OPEN_EVT";
+
 	case ESP_GATTS_CLOSE_EVT:
 		return "ESP_GATTS_CLOSE_EVT";
+
 	case ESP_GATTS_LISTEN_EVT:
 		return "ESP_GATTS_LISTEN_EVT";
+
 	case ESP_GATTS_CONGEST_EVT:
 		return "ESP_GATTS_CONGEST_EVT";
+
 	case ESP_GATTS_RESPONSE_EVT:
 		return "ESP_GATTS_RESPONSE_EVT";
+
 	case ESP_GATTS_CREAT_ATTR_TAB_EVT:
 		return "ESP_GATTS_CREAT_ATTR_TAB_EVT";
+
 	case ESP_GATTS_SET_ATTR_VAL_EVT:
 		return "ESP_GATTS_SET_ATTR_VAL_EVT";
+
 	}
 	return "Unknown";
 } // gattServerEventTypeToString
@@ -1141,11 +1220,13 @@ void BLEUtils::dumpGapEvent(
 		// - ble_adv
 		// - flag
 		// - num_resps
+		// - adv_data_len
+		// - scan_rsp_len
 		//
 		case ESP_GAP_BLE_SCAN_RESULT_EVT: {
 			switch(param->scan_rst.search_evt) {
 				case ESP_GAP_SEARCH_INQ_RES_EVT: {
-					ESP_LOGD(LOG_TAG, "search_evt: %s, bda: %s, dev_type: %s, ble_addr_type: %s, ble_evt_type: %s, rssi: %d, ble_adv: ??, flag: %d, num_resps: %d, adv_data_len: %d, scan_rsp_len: %d",
+					ESP_LOGD(LOG_TAG, "search_evt: %s, bda: %s, dev_type: %s, ble_addr_type: %s, ble_evt_type: %s, rssi: %d, ble_adv: ??, flag: %d (%s), num_resps: %d, adv_data_len: %d, scan_rsp_len: %d",
 						searchEventTypeToString(param->scan_rst.search_evt),
 						BLEAddress(param->scan_rst.bda).toString().c_str(),
 						devTypeToString(param->scan_rst.dev_type),
@@ -1153,6 +1234,7 @@ void BLEUtils::dumpGapEvent(
 						eventTypeToString(param->scan_rst.ble_evt_type),
 						param->scan_rst.rssi,
 						param->scan_rst.flag,
+						adFlagsToString(param->scan_rst.flag).c_str(),
 						param->scan_rst.num_resps,
 						param->scan_rst.adv_data_len,
 						param->scan_rst.scan_rsp_len
@@ -1286,8 +1368,7 @@ void BLEUtils::dumpGattClientEvent(
 		// - uint16_t          conn_id
 		// - esp_bd_addr_t     remote_bda
 		case ESP_GATTC_CONNECT_EVT: {
-			ESP_LOGD(LOG_TAG, "[staus: %s, conn_id: %d, remote_bda: %s]",
-				BLEUtils::gattStatusToString(evtParam->connect.status).c_str(),
+			ESP_LOGD(LOG_TAG, "[conn_id: %d, remote_bda: %s]",
 				evtParam->connect.conn_id,
 				BLEAddress(evtParam->connect.remote_bda).toString().c_str()
 			);
@@ -1302,8 +1383,7 @@ void BLEUtils::dumpGattClientEvent(
 		// - uint16_t          conn_id
 		// - esp_bd_addr_t     remote_bda
 		case ESP_GATTC_DISCONNECT_EVT: {
-			ESP_LOGD(LOG_TAG, "[staus: %s, conn_id: %d, remote_bda: %s]",
-				BLEUtils::gattStatusToString(evtParam->disconnect.status).c_str(),
+			ESP_LOGD(LOG_TAG, "[conn_id: %d, remote_bda: %s]",
 				evtParam->disconnect.conn_id,
 				BLEAddress(evtParam->disconnect.remote_bda).toString().c_str()
 			);
@@ -1586,10 +1666,9 @@ void BLEUtils::dumpGattServerEvent(
 		} // ESP_GATTS_CONGEST_EVT
 
 		case ESP_GATTS_CONNECT_EVT: {
-			ESP_LOGD(LOG_TAG, "[conn_id: %d, remote_bda: %s, is_connected: %d]",
+			ESP_LOGD(LOG_TAG, "[conn_id: %d, remote_bda: %s]",
 				evtParam->connect.conn_id,
-				BLEAddress(evtParam->connect.remote_bda).toString().c_str(),
-				evtParam->connect.is_connected);
+				BLEAddress(evtParam->connect.remote_bda).toString().c_str());
 			break;
 		} // ESP_GATTS_CONNECT_EVT
 
@@ -1603,10 +1682,9 @@ void BLEUtils::dumpGattServerEvent(
 		} // ESP_GATTS_CREATE_EVT
 
 		case ESP_GATTS_DISCONNECT_EVT: {
-			ESP_LOGD(LOG_TAG, "[conn_id: %d, remote_bda: %s, is_connected: %d]",
+			ESP_LOGD(LOG_TAG, "[conn_id: %d, remote_bda: %s]",
 				evtParam->connect.conn_id,
-				BLEAddress(evtParam->connect.remote_bda).toString().c_str(),
-				evtParam->connect.is_connected);
+				BLEAddress(evtParam->connect.remote_bda).toString().c_str());
 			break;
 		} // ESP_GATTS_DISCONNECT_EVT
 
@@ -1763,58 +1841,85 @@ const char* BLEUtils::gapEventToString(uint32_t eventType) {
 	switch(eventType) {
 		case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
 			return "ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
 			return "ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
 			return "ESP_GAP_BLE_ADV_START_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:                      /*!< When stop adv complete, the event comes */
 			return "ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_AUTH_CMPL_EVT:                              /* Authentication complete indication. */
 			return "ESP_GAP_BLE_AUTH_CMPL_EVT";
+
 		case ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT:
 			return "ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_GET_BOND_DEV_COMPLETE_EVT:
 			return "ESP_GAP_BLE_GET_BOND_DEV_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_KEY_EVT:                                    /* BLE  key event for peer device keys */
 			return "ESP_GAP_BLE_KEY_EVT";
+
 		case ESP_GAP_BLE_LOCAL_IR_EVT:                               /* BLE local IR event */
 			return "ESP_GAP_BLE_LOCAL_IR_EVT";
+
 		case ESP_GAP_BLE_LOCAL_ER_EVT:                               /* BLE local ER event */
 			return "ESP_GAP_BLE_LOCAL_ER_EVT";
+
 		case ESP_GAP_BLE_NC_REQ_EVT:                                 /* Numeric Comparison request event */
 			return "ESP_GAP_BLE_NC_REQ_EVT";
+
 		case ESP_GAP_BLE_OOB_REQ_EVT:                                /* OOB request event */
 			return "ESP_GAP_BLE_OOB_REQ_EVT";
+
 		case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:                          /* passkey notification event */
 			return "ESP_GAP_BLE_PASSKEY_NOTIF_EVT";
+
 		case ESP_GAP_BLE_PASSKEY_REQ_EVT:                            /* passkey request event */
 			return "ESP_GAP_BLE_PASSKEY_REQ_EVT";
+
 		case ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT:
 			return "ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT:
 			return "ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_SCAN_RESULT_EVT:
 			return "ESP_GAP_BLE_SCAN_RESULT_EVT";
+
 		case ESP_GAP_BLE_SCAN_RSP_DATA_RAW_SET_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SCAN_RSP_DATA_RAW_SET_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SCAN_START_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_SEC_REQ_EVT:                                /* BLE  security request */
 			return "ESP_GAP_BLE_SEC_REQ_EVT";
+
 		case ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_SET_PKT_LENGTH_COMPLETE_EVT:
 			return "ESP_GAP_BLE_SET_PKT_LENGTH_COMPLETE_EVT";
+
 		case ESP_GAP_BLE_SET_STATIC_RAND_ADDR_EVT:
 			return "ESP_GAP_BLE_SET_STATIC_RAND_ADDR_EVT";
+
 		case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
 			return "ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT";
+
 
 		default:
 			ESP_LOGD(LOG_TAG, "gapEventToString: Unknown event type %d 0x%.2x", eventType, eventType);
@@ -1825,9 +1930,9 @@ const char* BLEUtils::gapEventToString(uint32_t eventType) {
 
 std::string BLEUtils::gattCharacteristicUUIDToString(uint32_t characteristicUUID) {
 	const characteristicMap_t *p = g_characteristicsMappings;
-	while (p->name.length() > 0) {
+	while (strlen(p->name) > 0) {
 		if (p->assignedNumber == characteristicUUID) {
-			return p->name;
+			return std::string(p->name);
 		}
 		p++;
 	}
@@ -1842,9 +1947,9 @@ std::string BLEUtils::gattCharacteristicUUIDToString(uint32_t characteristicUUID
  */
 std::string BLEUtils::gattDescriptorUUIDToString(uint32_t descriptorUUID) {
 	gattdescriptor_t* p = (gattdescriptor_t *)g_descriptor_ids;
-	while (p->name.length() > 0) {
+	while (strlen(p->name) > 0) {
 		if (p->assignedNumber == descriptorUUID) {
-			return p->name;
+			return std::string(p->name);
 		}
 		p++;
 	}
@@ -1878,9 +1983,9 @@ std::string BLEUtils::gattServiceIdToString(esp_gatt_srvc_id_t srvcId) {
 
 std::string BLEUtils::gattServiceToString(uint32_t serviceId) {
 	gattService_t* p = (gattService_t *)g_gattServices;
-	while (p->name.length() > 0) {
+	while (strlen(p->name) > 0) {
 		if (p->assignedNumber == serviceId) {
-			return p->name;
+			return std::string(p->name);
 		}
 		p++;
 	}
@@ -1992,9 +2097,9 @@ std::string BLEUtils::gattStatusToString(esp_gatt_status_t status) {
 std::string BLEUtils::getMember(uint32_t memberId) {
 	member_t* p = (member_t *)members_ids;
 
-	while (p->name.length() > 0) {
+	while (strlen(p->name) > 0) {
 		if (p->assignedNumber == memberId) {
-				return p->name;
+				return std::string(p->name);
 		}
 		p++;
 	}

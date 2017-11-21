@@ -76,24 +76,49 @@ uint32_t FreeRTOS::getTimeSinceStart() {
  * @return The value associated with the semaphore.
  */
 uint32_t FreeRTOS::Semaphore::wait(std::string owner) {
-	ESP_LOGV(LOG_TAG, "Semaphore waiting: %s for %s", toString().c_str(), owner.c_str());
-	xSemaphoreTake(m_semaphore, portMAX_DELAY);
+	ESP_LOGV(LOG_TAG, ">> wait: Semaphore waiting: %s for %s", toString().c_str(), owner.c_str());
+
+
+	if (m_usePthreads) {
+		pthread_mutex_lock(&m_pthread_mutex);
+	} else {
+		xSemaphoreTake(m_semaphore, portMAX_DELAY);
+	}
+
 	m_owner = owner;
-	xSemaphoreGive(m_semaphore);
-	ESP_LOGV(LOG_TAG, "Semaphore released: %s", toString().c_str());
-	m_owner = "<N/A>";
+
+	if (m_usePthreads) {
+		pthread_mutex_unlock(&m_pthread_mutex);
+	} else {
+		xSemaphoreGive(m_semaphore);
+	}
+
+	ESP_LOGV(LOG_TAG, "<< wait: Semaphore released: %s", toString().c_str());
+	m_owner = std::string("<N/A>");
 	return m_value;
 } // wait
 
+
 FreeRTOS::Semaphore::Semaphore(std::string name) {
-	m_semaphore = xSemaphoreCreateMutex();
+	m_usePthreads = false;   	// Are we using pThreads or FreeRTOS?
+	if (m_usePthreads) {
+		pthread_mutex_init(&m_pthread_mutex, nullptr);
+	} else {
+		m_semaphore = xSemaphoreCreateMutex();
+	}
+
 	m_name      = name;
-	m_owner     = "<N/A>";
+	m_owner     = std::string("<N/A>");
 	m_value     = 0;
 }
 
+
 FreeRTOS::Semaphore::~Semaphore() {
-	vSemaphoreDelete(m_semaphore);
+	if (m_usePthreads) {
+		pthread_mutex_destroy(&m_pthread_mutex);
+	} else {
+		vSemaphoreDelete(m_semaphore);
+	}
 }
 
 
@@ -102,12 +127,17 @@ FreeRTOS::Semaphore::~Semaphore() {
  * The Semaphore is given.
  */
 void FreeRTOS::Semaphore::give() {
-	xSemaphoreGive(m_semaphore);
+	ESP_LOGV(LOG_TAG, "Semaphore giving: %s", toString().c_str());
+	if (m_usePthreads) {
+		pthread_mutex_unlock(&m_pthread_mutex);
+	} else {
+		xSemaphoreGive(m_semaphore);
+	}
 #ifdef ARDUINO_ARCH_ESP32
 	FreeRTOS::sleep(10);
 #endif
-	ESP_LOGV(LOG_TAG, "Semaphore giving: %s", toString().c_str());
-	m_owner = "<N/A>";
+
+	m_owner = std::string("<N/A>");
 } // Semaphore::give
 
 
@@ -119,7 +149,7 @@ void FreeRTOS::Semaphore::give() {
 void FreeRTOS::Semaphore::give(uint32_t value) {
 	m_value = value;
 	give();
-}
+} // give
 
 
 /**
@@ -127,7 +157,11 @@ void FreeRTOS::Semaphore::give(uint32_t value) {
  */
 void FreeRTOS::Semaphore::giveFromISR() {
 	BaseType_t higherPriorityTaskWoken;
-	xSemaphoreGiveFromISR(m_semaphore, &higherPriorityTaskWoken);
+	if (m_usePthreads) {
+		assert(false);
+	} else {
+		xSemaphoreGiveFromISR(m_semaphore, &higherPriorityTaskWoken);
+	}
 } // giveFromISR
 
 
@@ -138,7 +172,11 @@ void FreeRTOS::Semaphore::giveFromISR() {
 void FreeRTOS::Semaphore::take(std::string owner)
 {
 	ESP_LOGD(LOG_TAG, "Semaphore taking: %s for %s", toString().c_str(), owner.c_str());
-	xSemaphoreTake(m_semaphore, portMAX_DELAY);
+	if (m_usePthreads) {
+		pthread_mutex_lock(&m_pthread_mutex);
+	} else {
+		xSemaphoreTake(m_semaphore, portMAX_DELAY);
+	}
 	m_owner = owner;
 	ESP_LOGD(LOG_TAG, "Semaphore taken:  %s", toString().c_str());
 } // Semaphore::take
@@ -150,19 +188,75 @@ void FreeRTOS::Semaphore::take(std::string owner)
  * @param [in] timeoutMs Timeout in milliseconds.
  */
 void FreeRTOS::Semaphore::take(uint32_t timeoutMs, std::string owner) {
+
 	ESP_LOGV(LOG_TAG, "Semaphore taking: %s for %s", toString().c_str(), owner.c_str());
+
+	if (m_usePthreads) {
+		assert(false);
+	} else {
+		xSemaphoreTake(m_semaphore, timeoutMs/portTICK_PERIOD_MS);
+	}
 	m_owner = owner;
-	xSemaphoreTake(m_semaphore, timeoutMs/portTICK_PERIOD_MS);
 	ESP_LOGV(LOG_TAG, "Semaphore taken:  %s", toString().c_str());
 } // Semaphore::take
+
 
 std::string FreeRTOS::Semaphore::toString() {
 	std::stringstream stringStream;
 	stringStream << "name: "<< m_name << " (0x" << std::hex << std::setfill('0') << (uint32_t)m_semaphore << "), owner: " << m_owner;
 	return stringStream.str();
-}
+} // toString
+
 
 void FreeRTOS::Semaphore::setName(std::string name) {
 	m_name = name;
-}
+} // setName
+
+
+/**
+ * @brief Create a ring buffer.
+ * @param [in] length The amount of storage to allocate for the ring buffer.
+ * @param [in] type The type of buffer.  One of RINGBUF_TYPE_NOSPLIT, RINGBUF_TYPE_ALLOWSPLIT, RINGBUF_TYPE_BYTEBUF.
+ */
+Ringbuffer::Ringbuffer(size_t length, ringbuf_type_t type) {
+	m_handle = ::xRingbufferCreate(length, type);
+} // Ringbuffer
+
+
+Ringbuffer::~Ringbuffer() {
+	::vRingbufferDelete(m_handle);
+} // ~Ringbuffer
+
+
+/**
+ * @brief Receive data from the buffer.
+ * @param [out] size On return, the size of data returned.
+ * @param [in] wait How long to wait.
+ * @return A pointer to the storage retrieved.
+ */
+void* Ringbuffer::receive(size_t* size, TickType_t wait) {
+	return ::xRingbufferReceive(m_handle, size, wait);
+} // receive
+
+
+/**
+ * @brief Return an item.
+ * @param [in] item The item to be returned/released.
+ */
+void Ringbuffer::returnItem(void* item) {
+	::vRingbufferReturnItem(m_handle, item);
+} // returnItem
+
+
+/**
+ * @brief Send data to the buffer.
+ * @param [in] data The data to place into the buffer.
+ * @param [in] length The length of data to place into the buffer.
+ * @param [in] wait How long to wait before giving up.  The default is to wait indefinitely.
+ * @return
+ */
+uint32_t Ringbuffer::send(void* data, size_t length, TickType_t wait) {
+	return ::xRingbufferSend(m_handle, data, length, wait);
+} // send
+
 

@@ -244,6 +244,7 @@ void BLECharacteristic::handleGATTServerEvent(
 		// - esp_bt_uuid_t char_uuid
 		case ESP_GATTS_ADD_CHAR_EVT: {
 			if (getUUID().equals(BLEUUID(param->add_char.char_uuid)) &&
+					getHandle() == param->add_char.attr_handle &&
 					getService()->getHandle()==param->add_char.service_handle) {
 				m_semaphoreCreateEvt.give();
 			}
@@ -418,11 +419,8 @@ void BLECharacteristic::handleGATTServerEvent(
 
 	// Give each of the descriptors associated with this characteristic the opportunity to handle the
 	// event.
-	BLEDescriptor *pDescriptor = m_descriptorMap.getFirst();
-	while(pDescriptor != nullptr) {
-		pDescriptor->handleGATTServerEvent(event, gatts_if, param);
-		pDescriptor = m_descriptorMap.getNext();
-	}
+
+	m_descriptorMap.handleGATTServerEvent(event, gatts_if, param);
 
 } // handleGATTServerEvent
 
@@ -556,7 +554,9 @@ void BLECharacteristic::setBroadcastProperty(bool value) {
  * @param [in] pCallbacks An instance of a callbacks structure used to define any callbacks for the characteristic.
  */
 void BLECharacteristic::setCallbacks(BLECharacteristicCallbacks* pCallbacks) {
+	ESP_LOGD(LOG_TAG, ">> setCallbacks: 0x%x", (uint32_t)pCallbacks);
 	m_pCallbacks = pCallbacks;
+	ESP_LOGD(LOG_TAG, "<< setCallbacks");
 } // setCallbacks
 
 
@@ -694,5 +694,26 @@ std::string BLECharacteristic::toString() {
 		((m_properties & ESP_GATT_CHAR_PROP_BIT_INDICATE)?"Indicate ":"");
 	return stringstream.str();
 } // toString
+
+BLECharacteristicCallbacks::~BLECharacteristicCallbacks() {}
+
+/**
+ * @brief Callback function to support a read request.
+ * @param [in] pCharacteristic The characteristic that is the source of the event.
+ */
+void BLECharacteristicCallbacks::onRead(BLECharacteristic *pCharacteristic) {
+	ESP_LOGD("BLECharacteristicCallbacks", ">> onRead: default");
+	ESP_LOGD("BLECharacteristicCallbacks", "<< onRead");
+} // onRead
+
+
+/**
+ * @brief Callback function to support a write request.
+ * @param [in] pCharacteristic The characteristic that is the source of the event.
+ */
+void BLECharacteristicCallbacks::onWrite(BLECharacteristic *pCharacteristic) {
+	ESP_LOGD("BLECharacteristicCallbacks", ">> onWrite: default");
+	ESP_LOGD("BLECharacteristicCallbacks", "<< onWrite");
+} // onWrite
 
 #endif /* CONFIG_BT_ENABLED */

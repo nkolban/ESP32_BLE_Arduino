@@ -115,7 +115,7 @@ void BLERemoteService::gattClientEventHandler(
 
 	// Send the event to each of the characteristics owned by this service.
 	for (auto &myPair : m_characteristicMap) {
-	   myPair.second->gattClientEventHandler(event, gattc_if, evtParam);
+	   myPair.first->gattClientEventHandler(event, gattc_if, evtParam);
 	}
 } // gattClientEventHandler
 
@@ -147,8 +147,8 @@ BLERemoteCharacteristic* BLERemoteService::getCharacteristic(BLEUUID uuid) {
 	}
 	std::string v = uuid.toString();
 	for (auto &myPair : m_characteristicMap) {
-		if (myPair.first == v) {
-			return myPair.second;
+		if (myPair.second == v) {
+			return myPair.first;
 		}
 	}
 	return nullptr;
@@ -257,7 +257,7 @@ void BLERemoteService::retrieveCharacteristics() {
 			this
 		);
 
-		m_characteristicMap.insert(std::pair<std::string, BLERemoteCharacteristic*>(pNewRemoteCharacteristic->getUUID().toString(), pNewRemoteCharacteristic));
+		m_characteristicMap.insert(std::pair<BLERemoteCharacteristic*, std::string>(pNewRemoteCharacteristic, pNewRemoteCharacteristic->getUUID().toString()));
 
 		offset++;   // Increment our count of number of descriptors found.
 	} // Loop forever (until we break inside the loop).
@@ -271,7 +271,7 @@ void BLERemoteService::retrieveCharacteristics() {
  * @brief Retrieve a map of all the characteristics of this service.
  * @return A map of all the characteristics of this service.
  */
-std::map<std::string, BLERemoteCharacteristic*>* BLERemoteService::getCharacteristics() {
+std::map<BLERemoteCharacteristic*, std::string>* BLERemoteService::getCharacteristics() {
 	ESP_LOGD(LOG_TAG, ">> getCharacteristics() for service: %s", getUUID().toString().c_str());
 	// If is possible that we have not read the characteristics associated with the service so do that
 	// now.  The request to retrieve the characteristics by calling "retrieveCharacteristics" is a blocking
@@ -325,7 +325,7 @@ BLEUUID BLERemoteService::getUUID() {
  */
 void BLERemoteService::removeCharacteristics() {
 	for (auto &myPair : m_characteristicMap) {
-	   delete myPair.second;
+	   delete myPair.first;
 	   m_characteristicMap.erase(myPair.first);
 	}
 	m_characteristicMap.clear();   // Clear the map
@@ -343,7 +343,7 @@ std::string BLERemoteService::toString() {
 	ss << ", start_handle: " << std::dec << m_startHandle << " 0x" << std::hex << m_startHandle <<
 			", end_handle: " << std::dec << m_endHandle << " 0x" << std::hex << m_endHandle;
 	for (auto &myPair : m_characteristicMap) {
-		ss << "\n" << myPair.second->toString();
+		ss << "\n" << myPair.first->toString();
 	   // myPair.second is the value
 	}
 	return ss.str();
