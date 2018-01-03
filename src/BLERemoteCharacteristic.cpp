@@ -43,6 +43,7 @@ BLERemoteCharacteristic::BLERemoteCharacteristic(
 	m_charProp       = charProp;
 	m_pRemoteService = pRemoteService;
 	m_notifyCallback = nullptr;
+	m_notifyContext	 = nullptr;
 
 	retrieveDescriptors(); // Get the descriptors for this characteristic
 	ESP_LOGD(LOG_TAG, "<< BLERemoteCharacteristic");
@@ -175,7 +176,8 @@ void BLERemoteCharacteristic::gattClientEventHandler(
 					this,
 					evtParam->notify.value,
 					evtParam->notify.value_len,
-					evtParam->notify.is_notify
+					evtParam->notify.is_notify,
+					m_notifyContext
 				);
 			} // End we have a callback function ...
 			break;
@@ -468,10 +470,13 @@ void BLERemoteCharacteristic::registerForNotify(
 			BLERemoteCharacteristic* pBLERemoteCharacteristic,
 			uint8_t*                 pData,
 			size_t                   length,
-			bool                     isNotify)) {
+			bool                     isNotify,
+			void* 					 notifyContext),
+		void* notifyContext) {
 	ESP_LOGD(LOG_TAG, ">> registerForNotify(): %s", toString().c_str());
 
 	m_notifyCallback = notifyCallback;   // Save the notification callback.
+	m_notifyContext = notifyContext;
 
 	m_semaphoreRegForNotifyEvt.take("registerForNotify");
 
