@@ -35,14 +35,18 @@ public:
 	std::string getName();
 	int         getRSSI();
 	BLEScan*    getScan();
+	std::string getServiceData();
+	BLEUUID     getServiceDataUUID();
 	BLEUUID     getServiceUUID();
 	int8_t      getTXPower();
 
-	bool		isAdvertisingService(BLEUUID uuid);
+
+	bool		    isAdvertisingService(BLEUUID uuid);
 	bool        haveAppearance();
 	bool        haveManufacturerData();
 	bool        haveName();
 	bool        haveRSSI();
+	bool        haveServiceData();
 	bool        haveServiceUUID();
 	bool        haveTXPower();
 
@@ -60,14 +64,18 @@ private:
 	void setName(std::string name);
 	void setRSSI(int rssi);
 	void setScan(BLEScan* pScan);
+	void setServiceData(std::string data);
+	void setServiceDataUUID(BLEUUID uuid);
 	void setServiceUUID(const char* serviceUUID);
 	void setServiceUUID(BLEUUID serviceUUID);
 	void setTXPower(int8_t txPower);
+
 
 	bool m_haveAppearance;
 	bool m_haveManufacturerData;
 	bool m_haveName;
 	bool m_haveRSSI;
+	bool m_haveServiceData;
 	bool m_haveServiceUUID;
 	bool m_haveTXPower;
 
@@ -82,6 +90,8 @@ private:
 	int         m_rssi;
 	std::vector<BLEUUID> m_serviceUUIDs;
 	int8_t      m_txPower;
+	std::string m_serviceData;
+	BLEUUID     m_serviceDataUUID;
 };
 
 /**
