@@ -333,7 +333,6 @@ BLERemoteService* BLEClient::getService(BLEUUID uuid) {
 		}
 	} // End of each of the services.
 	ESP_LOGD(LOG_TAG, "<< getService: not found");
-	throw new BLEUuidNotFoundException;
 } // getService
 
 
