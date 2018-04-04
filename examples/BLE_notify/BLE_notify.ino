@@ -23,8 +23,9 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
-BLECharacteristic *pCharacteristic;
+BLEServer *pServer = NULL;
 bool deviceConnected = false;
+bool oldDeviceConnected = false;
 uint8_t value = 0;
 
 // See the following for generating UUIDs:
@@ -53,14 +54,14 @@ void setup() {
   BLEDevice::init("MyESP32");
 
   // Create the BLE Server
-  BLEServer *pServer = BLEDevice::createServer();
+  pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
 
   // Create the BLE Service
   BLEService *pService = pServer->createService(SERVICE_UUID);
 
   // Create a BLE Characteristic
-  pCharacteristic = pService->createCharacteristic(
+  BLECharacteristic * pCharacteristic = pService->createCharacteristic(
                       CHARACTERISTIC_UUID,
                       BLECharacteristic::PROPERTY_READ   |
                       BLECharacteristic::PROPERTY_WRITE  |
@@ -81,13 +82,23 @@ void setup() {
 }
 
 void loop() {
-
-  if (deviceConnected) {
-    Serial.printf("*** NOTIFY: %d ***\n", value);
-    pCharacteristic->setValue(&value, 1);
-    pCharacteristic->notify();
-    //pCharacteristic->indicate();
-    value++;
-  }
-  delay(2000);
+    // notify changed value
+    if (deviceConnected) {
+        pCharacteristic->setValue(&value, 1);
+        pCharacteristic->notify();
+        value++;
+        delay(10); // bluetooth stack will go into congestion, if too many packets are sent
+    }
+    // disconnecting
+    if (!deviceConnected && oldDeviceConnected) {
+        delay(500); // give the bluetooth stack the chance to get things ready
+        pServer->startAdvertising(); // restart advertising
+        Serial.println("start advertising");
+        oldDeviceConnected = deviceConnected;
+    }
+    // connecting
+    if (deviceConnected && !oldDeviceConnected) {
+        // do stuff here on connecting
+        oldDeviceConnected = deviceConnected;
+    }
 }

@@ -72,6 +72,7 @@ void BLEService::executeCreate(BLEServer *pServer) {
 	m_semaphoreCreateEvt.take("executeCreate"); // Take the mutex and release at event ESP_GATTS_CREATE_EVT
 
 	esp_gatt_srvc_id_t srvc_id;
+	srvc_id.is_primary = true;
 	srvc_id.id.inst_id = 0;
 	srvc_id.id.uuid    = *m_uuid.getNative();
 	esp_err_t errRc = ::esp_ble_gatts_create_service(
@@ -192,7 +193,7 @@ void BLEService::addCharacteristic(BLECharacteristic* pCharacteristic) {
 
 	// Check that we don't add the same characteristic twice.
 	if (m_characteristicMap.getByUUID(pCharacteristic->getUUID()) != nullptr) {
-		ESP_LOGE(LOG_TAG, "<< Attempt to add a characteristic but we already have one with this UUID");
+		ESP_LOGW(LOG_TAG, "<< Adding a new characteristic with the same UUID as a previous one");
 		//return;
 	}
 
