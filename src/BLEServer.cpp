@@ -11,14 +11,12 @@
 #include <esp_bt.h>
 #include <esp_bt_main.h>
 #include <esp_gap_ble_api.h>
-//#include <esp_gatts_api.h>
 #include "BLEDevice.h"
 #include "BLEServer.h"
 #include "BLEService.h"
 #include "BLEUtils.h"
 #include <string.h>
 #include <string>
-#include <gatt_api.h>
 #include <unordered_set>
 #ifdef ARDUINO_ARCH_ESP32
 #include "esp32-hal-log.h"
@@ -70,21 +68,23 @@ BLEService* BLEServer::createService(const char* uuid) {
  * of a new service.  Every service must have a unique UUID.
  * @param [in] uuid The UUID of the new service.
  * @param [in] numHandles The maximum number of handles associated with this service.
+ * @param [in] inst_id With multiple services with the same UUID we need to provide inst_id value different for each service.
  * @return A reference to the new service object.
  */
-BLEService* BLEServer::createService(BLEUUID uuid, uint32_t numHandles) {
+BLEService* BLEServer::createService(BLEUUID uuid, uint32_t numHandles, uint8_t inst_id) {
 	ESP_LOGD(LOG_TAG, ">> createService - %s", uuid.toString().c_str());
 	m_semaphoreCreateEvt.take("createService");
 
 	// Check that a service with the supplied UUID does not already exist.
 	if (m_serviceMap.getByUUID(uuid) != nullptr) {
-		ESP_LOGE(LOG_TAG, "<< Attempt to create a new service with uuid %s but a service with that UUID already exists.",
+		ESP_LOGW(LOG_TAG, "<< Attempt to create a new service with uuid %s but a service with that UUID already exists.",
 			uuid.toString().c_str());
-		m_semaphoreCreateEvt.give();
-		return nullptr;
+		//m_semaphoreCreateEvt.give();
+		//return nullptr;
 	}
 
 	BLEService* pService = new BLEService(uuid, numHandles);
+	pService->m_id = inst_id;
 	m_serviceMap.setByUUID(uuid, pService); // Save a reference to this service being on this server.
 	pService->executeCreate(this);          // Perform the API calls to actually create the service.
 
