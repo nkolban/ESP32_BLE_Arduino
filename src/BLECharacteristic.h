@@ -21,7 +21,6 @@
 class BLEService;
 class BLEDescriptor;
 class BLECharacteristicCallbacks;
-class BLEComplexCharacteristicCallbacks;
 
 /**
  * @brief A management structure for %BLE descriptors.
