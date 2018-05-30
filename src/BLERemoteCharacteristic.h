@@ -19,11 +19,6 @@
 #include "BLEUUID.h"
 #include "FreeRTOS.h"
 
-class Notifier {
-	public:
-		virtual void onData(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify)=0;
-};
-
 class BLERemoteService;
 class BLERemoteDescriptor;
 
@@ -49,12 +44,12 @@ public:
 	uint8_t     readUInt8(void);
 	uint16_t    readUInt16(void);
 	uint32_t    readUInt32(void);
-	void        registerForNotify(Notifier* classToNotify);
+	void        registerForNotify(BLENotifier* objectToNotify);
 	void        writeValue(uint8_t* data, size_t length, bool response = false);
 	void        writeValue(std::string newValue, bool response = false);
 	void        writeValue(uint8_t newValue, bool response = false);
 	std::string toString(void);
-	Notifier* toNotify = nullptr;
+	BLENotifier* toNotify = nullptr;
 
 private:
 	BLERemoteCharacteristic(uint16_t handle, BLEUUID uuid, esp_gatt_char_prop_t charProp, BLERemoteService* pRemoteService);
