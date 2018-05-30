@@ -20,8 +20,6 @@
 #include "BLEService.h"
 #include "BLEAddress.h"
 
-static uint16_t app_id_counter = 0;
-
 class BLERemoteService;
 class BLEClientCallbacks;
 
