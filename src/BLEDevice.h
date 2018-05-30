@@ -49,9 +49,9 @@ public:
 private:
 	static BLEServer *m_pServer;
 	static BLEScan   *m_pScan;
-	static std::map<uint16_t, BLEClient*> clients;
-	static std::map<esp_gatt_if_t, BLEClient*> connectedClients;
-	static std::map<std::string, BLEClient*> connectedClientsAddr;
+	static std::map<uint16_t, BLEClient*> m_clients;
+	static std::map<esp_gatt_if_t, BLEClient*> m_connectedClients;
+	static std::map<std::string, BLEClient*> m_connectedClientsAddr;
 	static esp_ble_sec_act_t 	m_securityLevel;
 	static BLESecurityCallbacks* m_securityCallbacks;
 	static uint16_t		m_localMTU;

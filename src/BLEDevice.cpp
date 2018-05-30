@@ -39,9 +39,9 @@ static const char* LOG_TAG = "BLEDevice";
  */
 BLEServer* BLEDevice::m_pServer = nullptr;
 BLEScan*   BLEDevice::m_pScan   = nullptr;
-std::map<uint16_t, BLEClient*> BLEDevice::clients;
-std::map<esp_gatt_if_t, BLEClient*> BLEDevice::connectedClients;
-std::map<std::string, BLEClient*> BLEDevice::connectedClientsAddr;
+std::map<uint16_t, BLEClient*> BLEDevice::m_clients;
+std::map<esp_gatt_if_t, BLEClient*> BLEDevice::m_connectedClients;
+std::map<std::string, BLEClient*> BLEDevice::m_connectedClientsAddr;
 bool       initialized          = false;   // Have we been initialized?
 esp_ble_sec_act_t 	BLEDevice::m_securityLevel = (esp_ble_sec_act_t)0;
 BLESecurityCallbacks* BLEDevice::m_securityCallbacks = nullptr;
@@ -57,9 +57,9 @@ uint16_t   BLEDevice::m_localMTU = 23;
 	ESP_LOGE(LOG_TAG, "BLE GATTC is not enabled - CONFIG_GATTC_ENABLE not defined");
 	abort();
 #endif  // CONFIG_GATTC_ENABLE
-	clients[appId] = new BLEClient(appId);
+	m_clients[appId] = new BLEClient(appId);
 	ESP_LOGD(LOG_TAG, "<< createClient");
-	return clients[appId];
+	return m_clients[appId];
 } // createClient
 
 
@@ -148,16 +148,16 @@ uint16_t   BLEDevice::m_localMTU = 23;
 		case ESP_GATTC_REG_EVT: {
 			ESP_LOGI(LOG_TAG, "REG_EVT");
 			// get associated client
-			BLEClient* client = clients[(uint16_t)param->reg.app_id];
+			BLEClient* client = m_clients[(uint16_t)param->reg.app_id];
 
 			// store connected client with interface
-			connectedClients[gattc_if] = client;
+			m_connectedClients[gattc_if] = client;
 			break;
 		}
 		case ESP_GATTC_CONNECT_EVT: {
-			BLEClient* temp = connectedClients[gattc_if];
+			BLEClient* temp = m_connectedClients[gattc_if];
 			BLEAddress address = BLEAddress(param->connect.remote_bda);
-			connectedClientsAddr[address.toString()] = temp;
+			m_connectedClientsAddr[address.toString()] = temp;
 
 			if(BLEDevice::getMTU() != 23){
 				esp_err_t errRc = esp_ble_gattc_send_mtu_req(gattc_if, param->connect.conn_id);
@@ -180,7 +180,7 @@ uint16_t   BLEDevice::m_localMTU = 23;
 
 
 	// If we have a client registered, call it.
-	BLEClient* client = connectedClients[gattc_if];
+	BLEClient* client = m_connectedClients[gattc_if];
 	client->gattClientEventHandler(event, gattc_if, param);
 
 } // gattClientEventHandler
@@ -279,7 +279,7 @@ uint16_t   BLEDevice::m_localMTU = 23;
 	// hardcoded for now because of the remote address dependency
 	if (event == ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT) {
 		BLEAddress address = BLEAddress(param->read_rssi_cmpl.remote_addr);
-		BLEClient* client = connectedClientsAddr[address.toString()];
+		BLEClient* client = m_connectedClientsAddr[address.toString()];
 		client->handleGAPEvent(event, param);
 	}
 
