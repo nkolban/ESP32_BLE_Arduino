@@ -11,6 +11,7 @@
 #include <esp_bt.h>
 #include <esp_bt_main.h>
 #include <esp_gap_ble_api.h>
+//#include <esp_gatts_api.h>
 #include "BLEDevice.h"
 #include "BLEServer.h"
 #include "BLEService.h"
@@ -322,6 +323,14 @@ void BLEServer::setCallbacks(BLEServerCallbacks* pCallbacks) {
 	m_pServerCallbacks = pCallbacks;
 } // setCallbacks
 
+/*
+ * Remove service
+ */
+void BLEServer::removeService(BLEService *service) {
+	service->stop();
+	service->executeDelete();	
+	m_serviceMap.removeService(service);
+}
 
 /**
  * @brief Start advertising.
