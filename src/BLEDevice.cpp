@@ -344,7 +344,10 @@ uint16_t   BLEDevice::m_localMTU = 23;
 			ESP_LOGE(LOG_TAG, "nvs_flash_init: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 			return;
 		}
-
+		
+#ifndef CLASSIC_BT_ENABLED		
+		esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
+#endif
 		esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
 		errRc = esp_bt_controller_init(&bt_cfg);
 		if (errRc != ESP_OK) {
@@ -353,7 +356,6 @@ uint16_t   BLEDevice::m_localMTU = 23;
 		}
 
 #ifndef CLASSIC_BT_ENABLED
-	//	esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);  //FIXME waiting for response from esp-idf issue
 		errRc = esp_bt_controller_enable(ESP_BT_MODE_BLE);
 		//errRc = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
 		if (errRc != ESP_OK) {
