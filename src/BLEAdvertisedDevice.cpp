@@ -252,6 +252,13 @@ void BLEAdvertisedDevice::parseAdvertisement(uint8_t* payload) {
 			free(pHex);
 
 			switch(ad_type) {
+				case ESP_BLE_AD_TYPE_NAME_SHORT: {   // Adv Data Type: 0x08
+					if(!haveName()) {
+						setName(std::string(reinterpret_cast<char*>(payload), length));
+					}
+					break;
+				} // ESP_BLE_AD_TYPE_NAME_SHORT
+
 				case ESP_BLE_AD_TYPE_NAME_CMPL: {   // Adv Data Type: 0x09
 					setName(std::string(reinterpret_cast<char*>(payload), length));
 					break;
@@ -351,8 +358,8 @@ void BLEAdvertisedDevice::parseAdvertisement(uint8_t* payload) {
 			payload += length;
 		} // Length <> 0
 
-
-		if (sizeConsumed >=31 || length == 0) {
+		// 62 bytes is 31 bytes advertising and 31 bytes scan response
+		if (sizeConsumed >=62 || length == 0) {
 			finished = true;
 		}
 	} // !finished
@@ -406,7 +413,8 @@ void BLEAdvertisedDevice::setManufacturerData(std::string manufacturerData) {
  * @param [in] name The discovered name.
  */
 void BLEAdvertisedDevice::setName(std::string name) {
-	m_name     = name;
+	// Use .c_str() to recreate the string truncated at the first \0
+	m_name     = name.c_str();
 	m_haveName = true;
 	ESP_LOGD(LOG_TAG, "- setName(): name: %s", m_name.c_str());
 } // setName
@@ -490,6 +498,9 @@ void BLEAdvertisedDevice::setTXPower(int8_t txPower) {
 std::string BLEAdvertisedDevice::toString() {
 	std::stringstream ss;
 	ss << "Name: " << getName() << ", Address: " << getAddress().toString();
+	if (haveRSSI()) {
+		ss << ", rssi: " << getRSSI();
+	}
 	if (haveAppearance()) {
 		ss << ", appearance: " << getAppearance();
 	}
@@ -517,4 +528,3 @@ void BLEAdvertisedDevice::setPayload(uint8_t* payload) {
 
 
 #endif /* CONFIG_BT_ENABLED */
-
