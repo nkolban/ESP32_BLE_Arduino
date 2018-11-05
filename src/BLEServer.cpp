@@ -49,6 +49,13 @@ void BLEServer::createApp(uint16_t appId) {
 } // createApp
 
 
+void BLEServer::deleteApp(void) {
+	unregisterApp(m_appId);
+	m_appId = -1;
+	m_gatts_if = -1;
+} // deleteApp
+
+
 /**
  * @brief Create a %BLE Service.
  *
@@ -249,6 +256,13 @@ void BLEServer::handleGATTServerEvent(esp_gatts_cb_event_t event, esp_gatt_if_t 
 		} // ESP_GATTS_REG_EVT
 
 
+		// ESP_GATTS_UNREG_EVT
+		// nothing
+		case ESP_GATTS_UNREG_EVT: {
+			m_semaphoreUnregisterAppEvt.give(); // Unlock the mutex waiting for the unregistration of the app.
+			break;
+		} // ESP_GATTS_UNREG_EVT
+
 		// ESP_GATTS_WRITE_EVT - A request to write the value of a characteristic has arrived.
 		//
 		// write:
@@ -293,6 +307,20 @@ void BLEServer::registerApp(uint16_t m_appId) {
 	m_semaphoreRegisterAppEvt.wait("registerApp");
 	ESP_LOGD(LOG_TAG, "<< registerApp");
 } // registerApp
+
+
+/**
+ * @brief Unregister the app.
+ *
+ * @return N/A
+ */
+void BLEServer::unregisterApp(uint16_t i_appId) {
+	ESP_LOGD(LOG_TAG, ">> unregisterApp - %d", i_appId);
+	m_semaphoreUnregisterAppEvt.take("unregisterApp"); // Take the mutex, will be released by ESP_GATTS_REG_EVT event.
+	::esp_ble_gatts_app_unregister(m_gatts_if);
+	m_semaphoreUnregisterAppEvt.wait("unregisterApp");
+	ESP_LOGD(LOG_TAG, "<< unregisterApp");
+} // unregisterApp
 
 
 /**
