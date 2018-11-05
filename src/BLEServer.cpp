@@ -43,6 +43,17 @@ BLEServer::BLEServer() {
 } // BLEServer
 
 
+/**
+ * @brief Destruct a %BLE Server
+ *
+ */
+BLEServer::~BLEServer() {
+	if (m_appId != -1 && m_gatts_if != -1) {
+		deleteApp();
+	}
+} // ~BLEServer
+
+
 void BLEServer::createApp(uint16_t appId) {
 	m_appId = appId;
 	registerApp(appId);
