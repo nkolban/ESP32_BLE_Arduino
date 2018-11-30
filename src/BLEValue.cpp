@@ -7,14 +7,15 @@
 #include "sdkconfig.h"
 #if defined(CONFIG_BT_ENABLED)
 
-#include <esp_log.h>
-
-#include "BLEValue.h"
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 #include "esp32-hal-log.h"
+#define LOG_TAG ""
+#else
+#include "esp_log.h"
+static const char* LOG_TAG="BLEValue";
 #endif
 
-static const char* LOG_TAG="BLEValue";
+
 
 BLEValue::BLEValue() {
 	m_accumulation = "";
@@ -42,7 +43,7 @@ void BLEValue::addPart(std::string part) {
  */
 void BLEValue::addPart(uint8_t* pData, size_t length) {
 	ESP_LOGD(LOG_TAG, ">> addPart: length=%d", length);
-	m_accumulation += std::string((char *)pData, length);
+	m_accumulation += std::string((char*) pData, length);
 } // addPart
 
 
@@ -65,9 +66,7 @@ void BLEValue::cancel() {
 void BLEValue::commit() {
 	ESP_LOGD(LOG_TAG, ">> commit");
 	// If there is nothing to commit, do nothing.
-	if (m_accumulation.length() == 0) {
-		return;
-	}
+	if (m_accumulation.length() == 0) return;
 	setValue(m_accumulation);
 	m_accumulation = "";
 	m_readOffset   = 0;
@@ -79,7 +78,7 @@ void BLEValue::commit() {
  * @return A pointer to the data.
  */
 uint8_t* BLEValue::getData() {
-	return (uint8_t*)m_value.data();
+	return (uint8_t*) m_value.data();
 }
 
 
@@ -132,11 +131,8 @@ void BLEValue::setValue(std::string value) {
  * @param [in] The length of the new current value.
  */
 void BLEValue::setValue(uint8_t* pData, size_t length) {
-	m_value = std::string((char*)pData, length);
+	m_value = std::string((char*) pData, length);
 } // setValue
-
-
-
 
 
 #endif // CONFIG_BT_ENABLED

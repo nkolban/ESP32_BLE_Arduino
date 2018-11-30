@@ -40,6 +40,7 @@ uint32_t value = 0;
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
+      BLEAdvertising::startAdvertising();
     };
 
     void onDisconnect(BLEServer* pServer) {
@@ -90,7 +91,7 @@ void setup() {
 void loop() {
     // notify changed value
     if (deviceConnected) {
-        pCharacteristic->setValue((uint8_t*)&value, 4);
+        pCharacteristic->setValue(&value, 1);
         pCharacteristic->notify();
         value++;
         delay(3); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
