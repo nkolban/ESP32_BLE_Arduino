@@ -15,7 +15,7 @@ static BLEUUID    charUUID("beb5483e-36e1-4688-b7f5-ea07361b26a8");
 
 static boolean doConnect = false;
 static boolean connected = false;
-static doScan = false;
+static bool doScan = false;
 static BLERemoteCharacteristic* pRemoteCharacteristic;
 static BLEAdvertisedDevice* myDevice;
 
