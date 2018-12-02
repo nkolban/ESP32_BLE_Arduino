@@ -21,7 +21,7 @@
  * @return The descriptor.  If not present, then nullptr is returned.
  */
 BLEDescriptor* BLEDescriptorMap::getByUUID(const char* uuid) {
-    return getByUUID(BLEUUID(uuid));
+	return getByUUID(BLEUUID(uuid));
 }
 
 
@@ -32,8 +32,8 @@ BLEDescriptor* BLEDescriptorMap::getByUUID(const char* uuid) {
  */
 BLEDescriptor* BLEDescriptorMap::getByUUID(BLEUUID uuid) {
 	for (auto &myPair : m_uuidMap) {
-		if (myPair.second->getUUID().equals(uuid)) {
-			return myPair.second;
+		if (myPair.first->getUUID().equals(uuid)) {
+			return myPair.first;
 		}
 	}
 	//return m_uuidMap.at(uuid.toString());
@@ -57,8 +57,8 @@ BLEDescriptor* BLEDescriptorMap::getByHandle(uint16_t handle) {
  * @param [in] characteristic The descriptor to cache.
  * @return N/A.
  */
-void BLEDescriptorMap::setByUUID(const char* uuid, BLEDescriptor *pDescriptor){
-	m_uuidMap.insert(std::pair<std::string, BLEDescriptor *>(uuid, pDescriptor));
+void BLEDescriptorMap::setByUUID(const char* uuid, BLEDescriptor* pDescriptor){
+	m_uuidMap.insert(std::pair<BLEDescriptor*, std::string>(pDescriptor, uuid));
 } // setByUUID
 
 
@@ -69,8 +69,8 @@ void BLEDescriptorMap::setByUUID(const char* uuid, BLEDescriptor *pDescriptor){
  * @param [in] characteristic The descriptor to cache.
  * @return N/A.
  */
-void BLEDescriptorMap::setByUUID(BLEUUID uuid, BLEDescriptor *pDescriptor) {
-	m_uuidMap.insert(std::pair<std::string, BLEDescriptor *>(uuid.toString(), pDescriptor));
+void BLEDescriptorMap::setByUUID(BLEUUID uuid, BLEDescriptor* pDescriptor) {
+	m_uuidMap.insert(std::pair<BLEDescriptor*, std::string>(pDescriptor, uuid.toString()));
 } // setByUUID
 
 
@@ -80,9 +80,8 @@ void BLEDescriptorMap::setByUUID(BLEUUID uuid, BLEDescriptor *pDescriptor) {
  * @param [in] descriptor The descriptor to cache.
  * @return N/A.
  */
-void BLEDescriptorMap::setByHandle(uint16_t handle,
-		BLEDescriptor *pDescriptor) {
-	m_handleMap.insert(std::pair<uint16_t, BLEDescriptor *>(handle, pDescriptor));
+void BLEDescriptorMap::setByHandle(uint16_t handle, BLEDescriptor* pDescriptor) {
+	m_handleMap.insert(std::pair<uint16_t, BLEDescriptor*>(handle, pDescriptor));
 } // setByHandle
 
 
@@ -93,13 +92,13 @@ void BLEDescriptorMap::setByHandle(uint16_t handle,
 std::string BLEDescriptorMap::toString() {
 	std::stringstream stringStream;
 	stringStream << std::hex << std::setfill('0');
-	int count=0;
-	for (auto &myPair: m_uuidMap) {
+	int count = 0;
+	for (auto &myPair : m_uuidMap) {
 		if (count > 0) {
 			stringStream << "\n";
 		}
 		count++;
-		stringStream << "handle: 0x" << std::setw(2) << myPair.second->getHandle() << ", uuid: " + myPair.second->getUUID().toString();
+		stringStream << "handle: 0x" << std::setw(2) << myPair.first->getHandle() << ", uuid: " + myPair.first->getUUID().toString();
 	}
 	return stringStream.str();
 } // toString
@@ -114,10 +113,10 @@ std::string BLEDescriptorMap::toString() {
 void BLEDescriptorMap::handleGATTServerEvent(
 		esp_gatts_cb_event_t      event,
 		esp_gatt_if_t             gatts_if,
-		esp_ble_gatts_cb_param_t *param) {
+		esp_ble_gatts_cb_param_t* param) {
 	// Invoke the handler for every descriptor we have.
 	for (auto &myPair : m_uuidMap) {
-		myPair.second->handleGATTServerEvent(event, gatts_if, param);
+		myPair.first->handleGATTServerEvent(event, gatts_if, param);
 	}
 } // handleGATTServerEvent
 
@@ -128,10 +127,8 @@ void BLEDescriptorMap::handleGATTServerEvent(
  */
 BLEDescriptor* BLEDescriptorMap::getFirst() {
 	m_iterator = m_uuidMap.begin();
-	if (m_iterator == m_uuidMap.end()) {
-		return nullptr;
-	}
-	BLEDescriptor *pRet = m_iterator->second;
+	if (m_iterator == m_uuidMap.end()) return nullptr;
+	BLEDescriptor* pRet = m_iterator->first;
 	m_iterator++;
 	return pRet;
 } // getFirst
@@ -142,10 +139,8 @@ BLEDescriptor* BLEDescriptorMap::getFirst() {
  * @return The next descriptor in the map.
  */
 BLEDescriptor* BLEDescriptorMap::getNext() {
-	if (m_iterator == m_uuidMap.end()) {
-		return nullptr;
-	}
-	BLEDescriptor *pRet = m_iterator->second;
+	if (m_iterator == m_uuidMap.end()) return nullptr;
+	BLEDescriptor* pRet = m_iterator->first;
 	m_iterator++;
 	return pRet;
 } // getNext

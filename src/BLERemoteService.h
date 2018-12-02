@@ -26,7 +26,6 @@ class BLERemoteCharacteristic;
  */
 class BLERemoteService {
 public:
-
 	virtual ~BLERemoteService();
 
 	// Public methods
@@ -34,7 +33,8 @@ public:
 	BLERemoteCharacteristic* getCharacteristic(BLEUUID uuid);       // Get the specified characteristic reference.
 	BLERemoteCharacteristic* getCharacteristic(uint16_t uuid);      // Get the specified characteristic reference.
 	std::map<std::string, BLERemoteCharacteristic*>* getCharacteristics();
-	void getCharacteristics(std::map<uint16_t, BLERemoteCharacteristic*>* pCharacteristicMap);  // Get the characteristics map.
+	std::map<uint16_t, BLERemoteCharacteristic*>* getCharacteristicsByHandle();  // Get the characteristics map.
+	void getCharacteristics(std::map<uint16_t, BLERemoteCharacteristic*>* pCharacteristicMap);
 
 	BLEClient*               getClient(void);                                           // Get a reference to the client associated with this service.
 	uint16_t                 getHandle();                                               // Get the handle of this service.
@@ -67,10 +67,10 @@ private:
 	// Properties
 
 	// We maintain a map of characteristics owned by this service keyed by a string representation of the UUID.
-	std::map<std::string, BLERemoteCharacteristic *> m_characteristicMap;
+	std::map<std::string, BLERemoteCharacteristic*> m_characteristicMap;
 
 	// We maintain a map of characteristics owned by this service keyed by a handle.
-	std::map<uint16_t, BLERemoteCharacteristic *> m_characteristicMapByHandle;
+	std::map<uint16_t, BLERemoteCharacteristic*> m_characteristicMapByHandle;
 
 	bool                m_haveCharacteristics; // Have we previously obtained the characteristics.
 	BLEClient*          m_pClient;

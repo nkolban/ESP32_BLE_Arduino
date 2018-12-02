@@ -27,30 +27,27 @@ class BLECharacteristicCallbacks;
  */
 class BLEDescriptorMap {
 public:
-	void setByUUID(const char* uuid,  BLEDescriptor *pDescriptor);
-	void setByUUID(BLEUUID uuid,      BLEDescriptor *pDescriptor);
-	void setByHandle(uint16_t handle, BLEDescriptor *pDescriptor);
+	void setByUUID(const char* uuid, BLEDescriptor* pDescriptor);
+	void setByUUID(BLEUUID uuid, BLEDescriptor* pDescriptor);
+	void setByHandle(uint16_t handle, BLEDescriptor* pDescriptor);
 	BLEDescriptor* getByUUID(const char* uuid);
 	BLEDescriptor* getByUUID(BLEUUID uuid);
 	BLEDescriptor* getByHandle(uint16_t handle);
-	std::string    toString();
-	void handleGATTServerEvent(
-			esp_gatts_cb_event_t      event,
-			esp_gatt_if_t             gatts_if,
-			esp_ble_gatts_cb_param_t* param);
+	std::string	toString();
+	void handleGATTServerEvent(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t* param);
 	BLEDescriptor* getFirst();
 	BLEDescriptor* getNext();
 private:
-	std::map<std::string, BLEDescriptor *> m_uuidMap;
-	std::map<uint16_t,    BLEDescriptor *> m_handleMap;
-	std::map<std::string, BLEDescriptor *>::iterator m_iterator;
+	std::map<BLEDescriptor*, std::string> m_uuidMap;
+	std::map<uint16_t, BLEDescriptor*> m_handleMap;
+	std::map<BLEDescriptor*, std::string>::iterator m_iterator;
 };
 
 
 /**
  * @brief The model of a %BLE Characteristic.
  *
- * A %BLE Characteristic is an identified value container that manages a value.  It is exposed by a %BLE server and
+ * A BLE Characteristic is an identified value container that manages a value. It is exposed by a BLE server and
  * can be read and written to by a %BLE client.
  */
 class BLECharacteristic {
@@ -62,12 +59,12 @@ public:
 	void           addDescriptor(BLEDescriptor* pDescriptor);
 	BLEDescriptor* getDescriptorByUUID(const char* descriptorUUID);
 	BLEDescriptor* getDescriptorByUUID(BLEUUID descriptorUUID);
-	//size_t         getLength();
 	BLEUUID        getUUID();
 	std::string    getValue();
+	uint8_t*       getData();
 
 	void indicate();
-	void notify();
+	void notify(bool is_notification = true);
 	void setBroadcastProperty(bool value);
 	void setCallbacks(BLECharacteristicCallbacks* pCallbacks);
 	void setIndicateProperty(bool value);
@@ -127,7 +124,7 @@ private:
  * @brief Callbacks that can be associated with a %BLE characteristic to inform of events.
  *
  * When a server application creates a %BLE characteristic, we may wish to be informed when there is either
- * a read or write request to the characteristic's value.  An application can register a
+ * a read or write request to the characteristic's value. An application can register a
  * sub-classed instance of this class and will be notified when such an event happens.
  */
 class BLECharacteristicCallbacks {

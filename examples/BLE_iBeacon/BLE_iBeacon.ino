@@ -18,7 +18,6 @@
 #include "sys/time.h"
 
 #include "BLEDevice.h"
-#include "BLEServer.h"
 #include "BLEUtils.h"
 #include "BLEBeacon.h"
 #include "esp_sleep.h"
@@ -85,9 +84,9 @@ void setup() {
   BLEDevice::init("");
 
   // Create the BLE Server
-  BLEServer *pServer = BLEDevice::createServer();
+  // BLEServer *pServer = BLEDevice::createServer(); // <-- no longer required to instantiate BLEServer, less flash and ram usage
 
-  pAdvertising = pServer->getAdvertising();
+  pAdvertising = BLEDevice::getAdvertising();
   
   setBeacon();
    // Start advertising
