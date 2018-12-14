@@ -27,9 +27,13 @@
 #include "BLEClient.h"
 #include "BLEUtils.h"
 #include "GeneralUtils.h"
-#if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
-#include "esp32-hal-log.h"
+
+#if defined(ARDUINO_ARCH_ESP32)
 #include "esp32-hal-bt.h"
+#endif
+
+#if defined(CONFIG_ARDUHAL_ESP_LOG)
+#include "esp32-hal-log.h"
 #define LOG_TAG ""
 #else
 #include "esp_log.h"
