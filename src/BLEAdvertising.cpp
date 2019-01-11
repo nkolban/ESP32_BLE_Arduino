@@ -465,6 +465,20 @@ void BLEAdvertisementData::setShortName(std::string name) {
 
 
 /**
+ * @brief Set the TXPower parameter.
+ * @param [in] TXpower to include in the payload.
+ *
+ */
+void BLEAdvertisementData::setTXPower(uint8_t TXPower) {
+	char cdata[3];
+	cdata[0] = 2;
+	cdata[1] = ESP_BLE_AD_TYPE_TX_PWR;  // 0x0A
+	cdata[2] = TXPower;
+	addData(std::string(cdata, 3));
+} // setTXPower
+
+
+/**
  * @brief Retrieve the payload that is to be advertised.
  * @return The payload that is to be advertised.
  */
