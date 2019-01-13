@@ -52,6 +52,8 @@ public:
 	std::string toString();
 	uint8_t*	readRawData();
 
+	BLERemoteService* getRemoteService();
+	
 private:
 	BLERemoteCharacteristic(uint16_t handle, BLEUUID uuid, esp_gatt_char_prop_t charProp, BLERemoteService* pRemoteService);
 	friend class BLEClient;
@@ -61,7 +63,6 @@ private:
 	// Private member functions
 	void gattClientEventHandler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t* evtParam);
 
-	BLERemoteService* getRemoteService();
 	void              removeDescriptors();
 	void              retrieveDescriptors();
 
