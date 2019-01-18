@@ -46,6 +46,7 @@ BLERemoteCharacteristic::BLERemoteCharacteristic(
 	m_charProp       = charProp;
 	m_pRemoteService = pRemoteService;
 	m_notifyCallback = nullptr;
+	m_rawData = nullptr;
 
 	retrieveDescriptors(); // Get the descriptors for this characteristic
 	ESP_LOGD(LOG_TAG, "<< BLERemoteCharacteristic");
@@ -56,6 +57,7 @@ BLERemoteCharacteristic::BLERemoteCharacteristic(
  *@brief Destructor.
  */
 BLERemoteCharacteristic::~BLERemoteCharacteristic() {
+	if(m_rawData != nullptr) free(m_rawData);
 	removeDescriptors();   // Release resources for any descriptor information we may have allocated.
 } // ~BLERemoteCharacteristic
 
@@ -149,6 +151,10 @@ static bool compareGattId(esp_gatt_id_t id1, esp_gatt_id_t id2) {
  * @returns N/A
  */
 void BLERemoteCharacteristic::gattClientEventHandler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t* evtParam) {
+
+	ESP_LOGD(LOG_TAG, "gattClientEventHandler [esp_gatt_if: %d] ... %s",
+		gattc_if, BLEUtils::gattClientEventTypeToString(event).c_str());
+
 	switch(event) {
 		// ESP_GATTC_NOTIFY_EVT
 		//

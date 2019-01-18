@@ -64,6 +64,10 @@ void BLERemoteService::gattClientEventHandler(
 	esp_gattc_cb_event_t      event,
 	esp_gatt_if_t             gattc_if,
 	esp_ble_gattc_cb_param_t* evtParam) {
+
+	ESP_LOGD(LOG_TAG, "gattClientEventHandler [esp_gatt_if: %d] ... %s",
+		gattc_if, BLEUtils::gattClientEventTypeToString(event).c_str());
+
 	switch (event) {
 		//
 		// ESP_GATTC_GET_CHAR_EVT
