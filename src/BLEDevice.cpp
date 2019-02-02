@@ -63,13 +63,13 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  * @return A new instance of the client.
  */
 /* STATIC */ BLEClient* BLEDevice::createClient() {
-	ESP_LOGD(LOG_TAG, ">> createClient");
+	ESP_LOGV(LOG_TAG, ">> createClient");
 #ifndef CONFIG_GATTC_ENABLE  // Check that BLE GATTC is enabled in make menuconfig
 	ESP_LOGE(LOG_TAG, "BLE GATTC is not enabled - CONFIG_GATTC_ENABLE not defined");
 	abort();
 #endif  // CONFIG_GATTC_ENABLE
 	m_pClient = new BLEClient();
-	ESP_LOGD(LOG_TAG, "<< createClient");
+	ESP_LOGV(LOG_TAG, "<< createClient");
 	return m_pClient;
 } // createClient
 
@@ -79,14 +79,14 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  * @return A new instance of the server.
  */
 /* STATIC */ BLEServer* BLEDevice::createServer() {
-	ESP_LOGD(LOG_TAG, ">> createServer");
+	ESP_LOGV(LOG_TAG, ">> createServer");
 #ifndef CONFIG_GATTS_ENABLE  // Check that BLE GATTS is enabled in make menuconfig
 	ESP_LOGE(LOG_TAG, "BLE GATTS is not enabled - CONFIG_GATTS_ENABLE not defined");
 	abort();
 #endif // CONFIG_GATTS_ENABLE
 	m_pServer = new BLEServer();
 	m_pServer->createApp(m_appId++);
-	ESP_LOGD(LOG_TAG, "<< createServer");
+	ESP_LOGV(LOG_TAG, "<< createServer");
 	return m_pServer;
 } // createServer
 
@@ -103,7 +103,7 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
    esp_gatt_if_t             gatts_if,
    esp_ble_gatts_cb_param_t* param
 ) {
-	ESP_LOGD(LOG_TAG, "gattServerEventHandler [esp_gatt_if: %d] ... %s",
+	ESP_LOGV(LOG_TAG, "gattServerEventHandler [esp_gatt_if: %d] ... %s",
 		gatts_if,
 		BLEUtils::gattServerEventTypeToString(event).c_str());
 
@@ -150,7 +150,7 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
 	esp_gatt_if_t             gattc_if,
 	esp_ble_gattc_cb_param_t* param) {
 
-	ESP_LOGD(LOG_TAG, "gattClientEventHandler [esp_gatt_if: %d] ... %s",
+	ESP_LOGV(LOG_TAG, "gattClientEventHandler [esp_gatt_if: %d] ... %s",
 		gattc_if, BLEUtils::gattClientEventTypeToString(event).c_str());
 	BLEUtils::dumpGattClientEvent(event, gattc_if, param);
 
@@ -250,7 +250,7 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
 			 break;
 		 case ESP_GAP_BLE_KEY_EVT:
 			 //shows the ble key type info share with peer device to the user.
-			 ESP_LOGD(LOG_TAG, "ESP_GAP_BLE_KEY_EVT");
+			 ESP_LOGV(LOG_TAG, "ESP_GAP_BLE_KEY_EVT");
 #ifdef CONFIG_BLE_SMP_ENABLE   // Check that BLE SMP (security) is configured in make menuconfig
 			 ESP_LOGI(LOG_TAG, "key type = %s", BLESecurity::esp_key_type_to_str(param->ble_security.ble_key.key_type));
 #endif	// CONFIG_BLE_SMP_ENABLE
@@ -305,12 +305,12 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  * try and release/delete it.
  */
 /* STATIC */ BLEScan* BLEDevice::getScan() {
-	//ESP_LOGD(LOG_TAG, ">> getScan");
+	//ESP_LOGV(LOG_TAG, ">> getScan");
 	if (m_pScan == nullptr) {
 		m_pScan = new BLEScan();
-		//ESP_LOGD(LOG_TAG, " - creating a new scan object");
+		//ESP_LOGV(LOG_TAG, " - creating a new scan object");
 	}
-	//ESP_LOGD(LOG_TAG, "<< getScan: Returning object at 0x%x", (uint32_t)m_pScan);
+	//ESP_LOGV(LOG_TAG, "<< getScan: Returning object at 0x%x", (uint32_t)m_pScan);
 	return m_pScan;
 } // getScan
 
@@ -322,12 +322,12 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  * @param [in] characteristicUUID
  */
 /* STATIC */ std::string BLEDevice::getValue(BLEAddress bdAddress, BLEUUID serviceUUID, BLEUUID characteristicUUID) {
-	ESP_LOGD(LOG_TAG, ">> getValue: bdAddress: %s, serviceUUID: %s, characteristicUUID: %s", bdAddress.toString().c_str(), serviceUUID.toString().c_str(), characteristicUUID.toString().c_str());
+	ESP_LOGV(LOG_TAG, ">> getValue: bdAddress: %s, serviceUUID: %s, characteristicUUID: %s", bdAddress.toString().c_str(), serviceUUID.toString().c_str(), characteristicUUID.toString().c_str());
 	BLEClient* pClient = createClient();
 	pClient->connect(bdAddress);
 	std::string ret = pClient->getValue(serviceUUID, characteristicUUID);
 	pClient->disconnect();
-	ESP_LOGD(LOG_TAG, "<< getValue");
+	ESP_LOGV(LOG_TAG, "<< getValue");
 	return ret;
 } // getValue
 
@@ -450,12 +450,12 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  * @param [in] powerLevel.
  */
 /* STATIC */ void BLEDevice::setPower(esp_power_level_t powerLevel) {
-	ESP_LOGD(LOG_TAG, ">> setPower: %d", powerLevel);
+	ESP_LOGV(LOG_TAG, ">> setPower: %d", powerLevel);
 	esp_err_t errRc = ::esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, powerLevel);
 	if (errRc != ESP_OK) {
 		ESP_LOGE(LOG_TAG, "esp_ble_tx_power_set: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 	};
-	ESP_LOGD(LOG_TAG, "<< setPower");
+	ESP_LOGV(LOG_TAG, "<< setPower");
 } // setPower
 
 
@@ -466,7 +466,7 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  * @param [in] characteristicUUID
  */
 /* STATIC */ void BLEDevice::setValue(BLEAddress bdAddress, BLEUUID serviceUUID, BLEUUID characteristicUUID, std::string value) {
-	ESP_LOGD(LOG_TAG, ">> setValue: bdAddress: %s, serviceUUID: %s, characteristicUUID: %s", bdAddress.toString().c_str(), serviceUUID.toString().c_str(), characteristicUUID.toString().c_str());
+	ESP_LOGV(LOG_TAG, ">> setValue: bdAddress: %s, serviceUUID: %s, characteristicUUID: %s", bdAddress.toString().c_str(), serviceUUID.toString().c_str(), characteristicUUID.toString().c_str());
 	BLEClient* pClient = createClient();
 	pClient->connect(bdAddress);
 	pClient->setValue(serviceUUID, characteristicUUID, value);
@@ -490,12 +490,12 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  * @param [in] address The address to add to the white list.
  */
 void BLEDevice::whiteListAdd(BLEAddress address) {
-	ESP_LOGD(LOG_TAG, ">> whiteListAdd: %s", address.toString().c_str());
+	ESP_LOGV(LOG_TAG, ">> whiteListAdd: %s", address.toString().c_str());
 	esp_err_t errRc = esp_ble_gap_update_whitelist(true, *address.getNative());  // True to add an entry.
 	if (errRc != ESP_OK) {
 		ESP_LOGE(LOG_TAG, "esp_ble_gap_update_whitelist: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 	}
-	ESP_LOGD(LOG_TAG, "<< whiteListAdd");
+	ESP_LOGV(LOG_TAG, "<< whiteListAdd");
 } // whiteListAdd
 
 
@@ -504,12 +504,12 @@ void BLEDevice::whiteListAdd(BLEAddress address) {
  * @param [in] address The address to remove from the white list.
  */
 void BLEDevice::whiteListRemove(BLEAddress address) {
-	ESP_LOGD(LOG_TAG, ">> whiteListRemove: %s", address.toString().c_str());
+	ESP_LOGV(LOG_TAG, ">> whiteListRemove: %s", address.toString().c_str());
 	esp_err_t errRc = esp_ble_gap_update_whitelist(false, *address.getNative());  // False to remove an entry.
 	if (errRc != ESP_OK) {
 		ESP_LOGE(LOG_TAG, "esp_ble_gap_update_whitelist: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 	}
-	ESP_LOGD(LOG_TAG, "<< whiteListRemove");
+	ESP_LOGV(LOG_TAG, "<< whiteListRemove");
 } // whiteListRemove
 
 /*
@@ -533,14 +533,14 @@ void BLEDevice::setSecurityCallbacks(BLESecurityCallbacks* callbacks) {
  * @param [in] mtu Value to set local mtu, should be larger than 23 and lower or equal to 517
  */
 esp_err_t BLEDevice::setMTU(uint16_t mtu) {
-	ESP_LOGD(LOG_TAG, ">> setLocalMTU: %d", mtu);
+	ESP_LOGV(LOG_TAG, ">> setLocalMTU: %d", mtu);
 	esp_err_t err = esp_ble_gatt_set_local_mtu(mtu);
 	if (err == ESP_OK) {
 		m_localMTU = mtu;
 	} else {
 		ESP_LOGE(LOG_TAG, "can't set local mtu value: %d", mtu);
 	}
-	ESP_LOGD(LOG_TAG, "<< setLocalMTU");
+	ESP_LOGV(LOG_TAG, "<< setLocalMTU");
 	return err;
 }
 
@@ -560,14 +560,14 @@ BLEAdvertising* BLEDevice::getAdvertising() {
 		m_bleAdvertising = new BLEAdvertising();
 		ESP_LOGI(LOG_TAG, "create advertising");
 	}
-	ESP_LOGD(LOG_TAG, "get advertising");
+	ESP_LOGV(LOG_TAG, "get advertising");
 	return m_bleAdvertising; 
 }
 
 void BLEDevice::startAdvertising() {
-	ESP_LOGD(LOG_TAG, ">> startAdvertising");
+	ESP_LOGV(LOG_TAG, ">> startAdvertising");
 	getAdvertising()->start();
-	ESP_LOGD(LOG_TAG, "<< startAdvertising");
+	ESP_LOGV(LOG_TAG, "<< startAdvertising");
 } // startAdvertising
 
 /* multi connect support */
@@ -581,7 +581,7 @@ BLEClient* BLEDevice::getClientByGattIf(uint16_t conn_id) {
 }
 
 void BLEDevice::updatePeerDevice(void* peer, bool _client, uint16_t conn_id) {
-	ESP_LOGD(LOG_TAG, "update conn_id: %d, GATT role: %s", conn_id, _client? "client":"server");
+	ESP_LOGV(LOG_TAG, "update conn_id: %d, GATT role: %s", conn_id, _client? "client":"server");
 	std::map<uint16_t, conn_status_t>::iterator it = m_connectedClientsMap.find(ESP_GATT_IF_NONE);
 	if (it != m_connectedClientsMap.end()) {
 		std::swap(m_connectedClientsMap[conn_id], it->second);

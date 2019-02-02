@@ -73,7 +73,7 @@ BLEService* BLEServer::createService(const char* uuid) {
  * @return A reference to the new service object.
  */
 BLEService* BLEServer::createService(BLEUUID uuid, uint32_t numHandles, uint8_t inst_id) {
-	ESP_LOGD(LOG_TAG, ">> createService - %s", uuid.toString().c_str());
+	ESP_LOGV(LOG_TAG, ">> createService - %s", uuid.toString().c_str());
 	m_semaphoreCreateEvt.take("createService");
 
 	// Check that a service with the supplied UUID does not already exist.
@@ -89,7 +89,7 @@ BLEService* BLEServer::createService(BLEUUID uuid, uint32_t numHandles, uint8_t 
 
 	m_semaphoreCreateEvt.wait("createService");
 
-	ESP_LOGD(LOG_TAG, "<< createService");
+	ESP_LOGV(LOG_TAG, "<< createService");
 	return pService;
 } // createService
 
@@ -149,7 +149,7 @@ uint16_t BLEServer::getGattsIf() {
  *
  */
 void BLEServer::handleGATTServerEvent(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t* param) {
-	ESP_LOGD(LOG_TAG, ">> handleGATTServerEvent: %s",
+	ESP_LOGV(LOG_TAG, ">> handleGATTServerEvent: %s",
 		BLEUtils::gattServerEventTypeToString(event).c_str());
 
 	switch(event) {
@@ -277,7 +277,7 @@ void BLEServer::handleGATTServerEvent(esp_gatts_cb_event_t event, esp_gatt_if_t 
 	// Invoke the handler for every Service we have.
 	m_serviceMap.handleGATTServerEvent(event, gatts_if, param);
 
-	ESP_LOGD(LOG_TAG, "<< handleGATTServerEvent");
+	ESP_LOGV(LOG_TAG, "<< handleGATTServerEvent");
 } // handleGATTServerEvent
 
 
@@ -287,11 +287,11 @@ void BLEServer::handleGATTServerEvent(esp_gatts_cb_event_t event, esp_gatt_if_t 
  * @return N/A
  */
 void BLEServer::registerApp(uint16_t m_appId) {
-	ESP_LOGD(LOG_TAG, ">> registerApp - %d", m_appId);
+	ESP_LOGV(LOG_TAG, ">> registerApp - %d", m_appId);
 	m_semaphoreRegisterAppEvt.take("registerApp"); // Take the mutex, will be released by ESP_GATTS_REG_EVT event.
 	::esp_ble_gatts_app_register(m_appId);
 	m_semaphoreRegisterAppEvt.wait("registerApp");
-	ESP_LOGD(LOG_TAG, "<< registerApp");
+	ESP_LOGV(LOG_TAG, "<< registerApp");
 } // registerApp
 
 
@@ -324,9 +324,9 @@ void BLEServer::removeService(BLEService* service) {
  * retrieving the advertising object and invoking start upon it.
  */
 void BLEServer::startAdvertising() {
-	ESP_LOGD(LOG_TAG, ">> startAdvertising");
+	ESP_LOGV(LOG_TAG, ">> startAdvertising");
 	BLEDevice::startAdvertising();
-	ESP_LOGD(LOG_TAG, "<< startAdvertising");
+	ESP_LOGV(LOG_TAG, "<< startAdvertising");
 } // startAdvertising
 
 /**
@@ -349,29 +349,29 @@ bool BLEServer::connect(BLEAddress address) {
 	}
 
 	uint32_t rc = m_semaphoreOpenEvt.wait("connect");   // Wait for the connection to complete.
-	ESP_LOGD(LOG_TAG, "<< connect(), rc=%d", rc==ESP_GATT_OK);
+	ESP_LOGV(LOG_TAG, "<< connect(), rc=%d", rc==ESP_GATT_OK);
 	return rc == ESP_GATT_OK;
 } // connect
 
 
 
 void BLEServerCallbacks::onConnect(BLEServer* pServer) {
-	ESP_LOGD("BLEServerCallbacks", ">> onConnect(): Default");
-	ESP_LOGD("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
-	ESP_LOGD("BLEServerCallbacks", "<< onConnect()");
+	ESP_LOGV("BLEServerCallbacks", ">> onConnect(): Default");
+	ESP_LOGV("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
+	ESP_LOGV("BLEServerCallbacks", "<< onConnect()");
 } // onConnect
 
 void BLEServerCallbacks::onConnect(BLEServer* pServer, esp_ble_gatts_cb_param_t* param) {
-	ESP_LOGD("BLEServerCallbacks", ">> onConnect(): Default");
-	ESP_LOGD("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
-	ESP_LOGD("BLEServerCallbacks", "<< onConnect()");
+	ESP_LOGV("BLEServerCallbacks", ">> onConnect(): Default");
+	ESP_LOGV("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
+	ESP_LOGV("BLEServerCallbacks", "<< onConnect()");
 } // onConnect
 
 
 void BLEServerCallbacks::onDisconnect(BLEServer* pServer) {
-	ESP_LOGD("BLEServerCallbacks", ">> onDisconnect(): Default");
-	ESP_LOGD("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
-	ESP_LOGD("BLEServerCallbacks", "<< onDisconnect()");
+	ESP_LOGV("BLEServerCallbacks", ">> onDisconnect(): Default");
+	ESP_LOGV("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
+	ESP_LOGV("BLEServerCallbacks", "<< onDisconnect()");
 } // onDisconnect
 
 /* multi connect support */
