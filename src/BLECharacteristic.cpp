@@ -495,22 +495,27 @@ void BLECharacteristic::notify(bool is_notification) {
 
 	// Test to see if we have a 0x2902 descriptor.  If we do, then check to see if notification is enabled
 	// and, if not, prevent the notification.
+	// Notice that the returned descriptor is a copy of the original object and therefore should be freed afterwards
 
 	BLE2902 *p2902 = (BLE2902*)getDescriptorByUUID((uint16_t)0x2902);
-	if(is_notification) {
-		if (p2902 != nullptr && !p2902->getNotifications()) {
-			ESP_LOGD(LOG_TAG, "<< notifications disabled; ignoring");
-		  delete p2902;
-			return;
-		}
+	if (p2902 != nullptr) {
+    if(is_notification) {
+      if (!p2902->getNotifications()) {
+        ESP_LOGD(LOG_TAG, "<< notifications disabled; ignoring");
+        delete p2902;
+        return;
+      }
+    }
+    else{
+      if (!p2902->getIndications()) {
+        ESP_LOGD(LOG_TAG, "<< indications disabled; ignoring");
+        delete p2902;
+        return;
+      }
+    }
+    delete p2902;
 	}
-	else{
-		if (p2902 != nullptr && !p2902->getIndications()) {
-			ESP_LOGD(LOG_TAG, "<< indications disabled; ignoring");
-		  delete p2902;
-			return;
-		}
-	}
+
 	for (auto &myPair : getService()->getServer()->getPeerDevices(false)) {
 		uint16_t _mtu = (myPair.second.mtu);
 		if (m_value.getValue().length() > _mtu - 3) {
@@ -533,7 +538,6 @@ void BLECharacteristic::notify(bool is_notification) {
 		if(!is_notification)
 			m_semaphoreConfEvt.wait("indicate");
 	}
-	delete p2902;
 	ESP_LOGD(LOG_TAG, "<< notify");
 } // Notify
 
