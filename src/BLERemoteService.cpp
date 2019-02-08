@@ -165,7 +165,9 @@ BLERemoteCharacteristic* BLERemoteService::getCharacteristic(BLEUUID uuid) {
  * @return N/A
  */
 void BLERemoteService::retrieveCharacteristics() {
-	ESP_LOGD(LOG_TAG, ">> getCharacteristics() for service: %s", getUUID().toString().c_str());
+    esp_gatt_status_t status;
+    try{	
+	ESP_LOGD(LOG_TAG, ">> retrieveCharacteristics() for service: %s", getUUID().toString().c_str());
 
 	removeCharacteristics(); // Forget any previous characteristics.
 
@@ -209,11 +211,13 @@ void BLERemoteService::retrieveCharacteristics() {
 		m_characteristicMap.insert(std::pair<std::string, BLERemoteCharacteristic*>(pNewRemoteCharacteristic->getUUID().toString(), pNewRemoteCharacteristic));
 		m_characteristicMapByHandle.insert(std::pair<uint16_t, BLERemoteCharacteristic*>(result.char_handle, pNewRemoteCharacteristic));
 		offset++;   // Increment our count of number of descriptors found.
+		m_haveCharacteristics = true; // Remember that we have received the characteristics.
 	} // Loop forever (until we break inside the loop).
-
-	m_haveCharacteristics = true; // Remember that we have received the characteristics.
-	ESP_LOGD(LOG_TAG, "<< getCharacteristics()");
-} // getCharacteristics
+    }catch(const std::exception&){
+	ESP_LOGE(LOG_TAG, "Catched exception inside retrieveCharacteristics!!!");
+    }
+    ESP_LOGD(LOG_TAG, "<< retrieveCharacteristics()");
+} // retrieveCharacteristics
 
 
 /**
