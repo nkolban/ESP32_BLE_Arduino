@@ -175,7 +175,7 @@ void BLERemoteService::retrieveCharacteristics() {
 	esp_gattc_char_elem_t result;
 	while (true) {
 		uint16_t count = 10;  // this value is used as in parameter that allows to search max 10 chars with the same uuid
-		esp_gatt_status_t status = ::esp_ble_gattc_get_all_char(
+		status = ::esp_ble_gattc_get_all_char(
 			getClient()->getGattcIf(),
 			getClient()->getConnId(),
 			m_startHandle,
