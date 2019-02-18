@@ -488,12 +488,13 @@ void BLEAdvertising::handleGAPEvent(
 			break;
 		}
 		case ESP_GAP_BLE_ADV_START_COMPLETE_EVT: {
+			ESP_LOGI(LOG_TAG, "Advertising has started");
 			// m_semaphoreSetAdv.give();
 			break;
 		}
 		case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT: {
-			ESP_LOGI(LOG_TAG, "STOP advertising");
-			start();
+			ESP_LOGI(LOG_TAG, "Advertising has stopped");
+			//start();
 			break;
 		}
 		default:
