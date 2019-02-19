@@ -209,13 +209,11 @@ void BLEServer::handleGATTServerEvent(esp_gatts_cb_event_t event, esp_gatt_if_t 
 		// - esp_gatt_conn_reason_t         reason
 		//
 		// If we receive a disconnect event then invoke the callback for disconnects (if one is present).
-		// we also want to start advertising again.
 		case ESP_GATTS_DISCONNECT_EVT: {
 			m_connectedCount--;                          // Decrement the number of connected devices count.
 			if (m_pServerCallbacks != nullptr) {         // If we have callbacks, call now.
 				m_pServerCallbacks->onDisconnect(this);
 			}
-			startAdvertising(); //- do this with some delay from the loop()
 			removePeerDevice(param->disconnect.conn_id, false);
 			break;
 		} // ESP_GATTS_DISCONNECT_EVT
