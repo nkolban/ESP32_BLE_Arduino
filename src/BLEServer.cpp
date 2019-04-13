@@ -357,20 +357,20 @@ bool BLEServer::connect(BLEAddress address) {
 
 void BLEServerCallbacks::onConnect(BLEServer* pServer) {
 	ESP_LOGV("BLEServerCallbacks", ">> onConnect(): Default");
-	ESP_LOGV("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
+	ESP_LOGD("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
 	ESP_LOGV("BLEServerCallbacks", "<< onConnect()");
 } // onConnect
 
 void BLEServerCallbacks::onConnect(BLEServer* pServer, esp_ble_gatts_cb_param_t* param) {
 	ESP_LOGV("BLEServerCallbacks", ">> onConnect(): Default");
-	ESP_LOGV("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
+	ESP_LOGD("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
 	ESP_LOGV("BLEServerCallbacks", "<< onConnect()");
 } // onConnect
 
 
 void BLEServerCallbacks::onDisconnect(BLEServer* pServer) {
 	ESP_LOGV("BLEServerCallbacks", ">> onDisconnect(): Default");
-	ESP_LOGV("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
+	ESP_LOGD("BLEServerCallbacks", "Device: %s", BLEDevice::toString().c_str());
 	ESP_LOGV("BLEServerCallbacks", "<< onDisconnect()");
 } // onDisconnect
 

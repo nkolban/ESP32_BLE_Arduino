@@ -227,7 +227,7 @@ void BLEService::addCharacteristic(BLECharacteristic* pCharacteristic) {
 	// to the map and then ask the service to add the characteristic at the BLE level (ESP-IDF).
 
 	ESP_LOGV(LOG_TAG, ">> addCharacteristic()");
-	ESP_LOGV(LOG_TAG, "Adding characteristic: uuid=%s to service: %s",
+	ESP_LOGD(LOG_TAG, "Adding characteristic: uuid=%s to service: %s",
 		pCharacteristic->getUUID().toString().c_str(),
 		toString().c_str());
 
