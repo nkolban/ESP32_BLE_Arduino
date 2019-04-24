@@ -135,6 +135,21 @@ uint32_t BLEServer::getConnectedCount() {
 } // getConnectedCount
 
 
+/**
+ * @brief Disconnect Client
+ *
+ * Force a client to disconnect
+ */
+void BLEServer::disconnectClient() {
+	ESP_LOGD(LOG_TAG, ">> disconnectClient()");
+	esp_err_t errRc = ::esp_ble_gatts_close(getGattsIf(), getConnId());
+	if (errRc != ESP_OK) {
+		ESP_LOGE(LOG_TAG, "esp_ble_gatts_close: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
+		return;
+	}
+	ESP_LOGD(LOG_TAG, "<< disconnectClient()");
+}
+
 uint16_t BLEServer::getGattsIf() {
 	return m_gatts_if;
 }
