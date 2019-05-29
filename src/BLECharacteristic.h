@@ -132,6 +132,8 @@ public:
 	virtual ~BLECharacteristicCallbacks();
 	virtual void onRead(BLECharacteristic* pCharacteristic);
 	virtual void onWrite(BLECharacteristic* pCharacteristic);
+	virtual esp_gatt_status_t onWrite(BLECharacteristic* pCharacteristic, esp_ble_gatts_cb_param_t* param);
 };
+
 #endif /* CONFIG_BT_ENABLED */
 #endif /* COMPONENTS_CPP_UTILS_BLECHARACTERISTIC_H_ */
