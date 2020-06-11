@@ -259,7 +259,7 @@ void BLEAdvertisedDevice::parseAdvertisement(uint8_t* payload, size_t total_len)
 					break;
 				}// ESP_BLE_AD_TYPE_NAME_SHORT
 				case ESP_BLE_AD_TYPE_NAME_CMPL: {   // Adv Data Type: 0x09
-					//setName(std::string(reinterpret_cast<char*>(payload), length));
+					setName(std::string(reinterpret_cast<char*>(payload), length));
 					break;
 				} // ESP_BLE_AD_TYPE_NAME_CMPL
 
