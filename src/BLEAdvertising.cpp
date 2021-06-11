@@ -493,7 +493,6 @@ void BLEAdvertising::handleGAPEvent(
 		}
 		case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT: {
 			ESP_LOGI(LOG_TAG, "STOP advertising");
-			start();
 			break;
 		}
 		default:
