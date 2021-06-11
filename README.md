@@ -1,5 +1,3 @@
-# Forked library to fix bug in stopAdvertising()
-
 ## ESP32 BLE for Arduino (This repository is kept for archive. BLE code is now included in Arduino directly.)
 The Arduino IDE provides an excellent library package manager where versions of libraries can be downloaded and installed.  This Github project provides the repository for the ESP32 BLE support for Arduino.
 
