@@ -34,15 +34,15 @@ std::string BLEBeacon::getData() {
 } // getData
 
 uint16_t BLEBeacon::getMajor() {
-	return m_beaconData.major;
+	return ENDIAN_CHANGE_U16(m_beaconData.major);
 }
 
 uint16_t BLEBeacon::getManufacturerId() {
-	return m_beaconData.manufacturerId;
+	return ENDIAN_CHANGE_U16(m_beaconData.manufacturerId);
 }
 
 uint16_t BLEBeacon::getMinor() {
-	return m_beaconData.minor;
+	return ENDIAN_CHANGE_U16(m_beaconData.minor);
 }
 
 BLEUUID BLEBeacon::getProximityUUID() {
