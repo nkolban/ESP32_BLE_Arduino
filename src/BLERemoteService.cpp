@@ -165,55 +165,59 @@ BLERemoteCharacteristic* BLERemoteService::getCharacteristic(BLEUUID uuid) {
  * @return N/A
  */
 void BLERemoteService::retrieveCharacteristics() {
-	ESP_LOGD(LOG_TAG, ">> getCharacteristics() for service: %s", getUUID().toString().c_str());
+    esp_gatt_status_t status;
+    try{
+		ESP_LOGD(LOG_TAG, ">> retrieveCharacteristics() for service: %s", getUUID().toString().c_str());
 
-	removeCharacteristics(); // Forget any previous characteristics.
+		removeCharacteristics(); // Forget any previous characteristics.
 
-	uint16_t offset = 0;
-	esp_gattc_char_elem_t result;
-	while (true) {
-		uint16_t count = 10;  // this value is used as in parameter that allows to search max 10 chars with the same uuid
-		esp_gatt_status_t status = ::esp_ble_gattc_get_all_char(
-			getClient()->getGattcIf(),
-			getClient()->getConnId(),
-			m_startHandle,
-			m_endHandle,
-			&result,
-			&count,
-			offset
-		);
+		uint16_t offset = 0;
+		esp_gattc_char_elem_t result;
+		while (true) {
+			uint16_t count = 10;  // this value is used as in parameter that allows to search max 10 chars with the same uuid
+			status = ::esp_ble_gattc_get_all_char(
+				getClient()->getGattcIf(),
+				getClient()->getConnId(),
+				m_startHandle,
+				m_endHandle,
+				&result,
+				&count,
+				offset
+			);
 
-		if (status == ESP_GATT_INVALID_OFFSET) {   // We have reached the end of the entries.
-			break;
-		}
+			if (status == ESP_GATT_INVALID_OFFSET) {   // We have reached the end of the entries.
+				break;
+			}
 
-		if (status != ESP_GATT_OK) {   // If we got an error, end.
-			ESP_LOGE(LOG_TAG, "esp_ble_gattc_get_all_char: %s", BLEUtils::gattStatusToString(status).c_str());
-			break;
-		}
+			if (status != ESP_GATT_OK) {   // If we got an error, end.
+				ESP_LOGE(LOG_TAG, "esp_ble_gattc_get_all_char: %s", BLEUtils::gattStatusToString(status).c_str());
+				break;
+			}
 
-		if (count == 0) {   // If we failed to get any new records, end.
-			break;
-		}
+			if (count == 0) {   // If we failed to get any new records, end.
+				break;
+			}
 
-		ESP_LOGD(LOG_TAG, "Found a characteristic: Handle: %d, UUID: %s", result.char_handle, BLEUUID(result.uuid).toString().c_str());
+			ESP_LOGD(LOG_TAG, "Found a characteristic: Handle: %d, UUID: %s", result.char_handle, BLEUUID(result.uuid).toString().c_str());
 
-		// We now have a new characteristic ... let us add that to our set of known characteristics
-		BLERemoteCharacteristic *pNewRemoteCharacteristic = new BLERemoteCharacteristic(
-			result.char_handle,
-			BLEUUID(result.uuid),
-			result.properties,
-			this
-		);
+			// We now have a new characteristic ... let us add that to our set of known characteristics
+			BLERemoteCharacteristic *pNewRemoteCharacteristic = new BLERemoteCharacteristic(
+				result.char_handle,
+				BLEUUID(result.uuid),
+				result.properties,
+				this
+			);
 
-		m_characteristicMap.insert(std::pair<std::string, BLERemoteCharacteristic*>(pNewRemoteCharacteristic->getUUID().toString(), pNewRemoteCharacteristic));
-		m_characteristicMapByHandle.insert(std::pair<uint16_t, BLERemoteCharacteristic*>(result.char_handle, pNewRemoteCharacteristic));
-		offset++;   // Increment our count of number of descriptors found.
-	} // Loop forever (until we break inside the loop).
-
-	m_haveCharacteristics = true; // Remember that we have received the characteristics.
-	ESP_LOGD(LOG_TAG, "<< getCharacteristics()");
-} // getCharacteristics
+			m_characteristicMap.insert(std::pair<std::string, BLERemoteCharacteristic*>(pNewRemoteCharacteristic->getUUID().toString(), pNewRemoteCharacteristic));
+			m_characteristicMapByHandle.insert(std::pair<uint16_t, BLERemoteCharacteristic*>(result.char_handle, pNewRemoteCharacteristic));
+			offset++;   // Increment our count of number of descriptors found.
+			m_haveCharacteristics = true; // Remember that we have received the characteristics.
+		} // Loop forever (until we break inside the loop).
+    }catch(const std::exception&){
+    	ESP_LOGE(LOG_TAG, "Catched exception inside retrieveCharacteristics!!!");
+    }
+    ESP_LOGD(LOG_TAG, "<< retrieveCharacteristics()");
+} // retrieveCharacteristics
 
 
 /**
