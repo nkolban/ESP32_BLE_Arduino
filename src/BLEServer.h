@@ -63,6 +63,14 @@ private:
 class BLEServer {
 public:
 	uint32_t        getConnectedCount();
+
+	/**
+	 * @brief Disconnect Client
+	 *
+	 * Force a client to disconnect
+	 */
+	void disconnectClient();
+
 	BLEService*     createService(const char* uuid);	
 	BLEService*     createService(BLEUUID uuid, uint32_t numHandles=15, uint8_t inst_id=0);
 	BLEAdvertising* getAdvertising();
