@@ -224,10 +224,11 @@ void BLECharacteristic::handleGATTServerEvent(
 		// - uint8_t exec_write_flag - Either ESP_GATT_PREP_WRITE_EXEC or ESP_GATT_PREP_WRITE_CANCEL
 		//
 		case ESP_GATTS_EXEC_WRITE_EVT: {
+			esp_gatt_status_t retval = ESP_GATT_OK;
 			if (param->exec_write.exec_write_flag == ESP_GATT_PREP_WRITE_EXEC) {
 				m_value.commit();
 				if (m_pCallbacks != nullptr) {
-					m_pCallbacks->onWrite(this); // Invoke the onWrite callback handler.
+					retval = m_pCallbacks->onWrite(this,param); // Invoke the onWrite callback handler.
 				}
 			} else {
 				m_value.cancel();
@@ -236,7 +237,7 @@ void BLECharacteristic::handleGATTServerEvent(
 			esp_err_t errRc = ::esp_ble_gatts_send_response(
 					gatts_if,
 					param->write.conn_id,
-					param->write.trans_id, ESP_GATT_OK, nullptr);
+					param->write.trans_id, retval, nullptr);
 			if (errRc != ESP_OK) {
 				ESP_LOGE(LOG_TAG, "esp_ble_gatts_send_response: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 			}
@@ -282,6 +283,7 @@ void BLECharacteristic::handleGATTServerEvent(
 // we save the new value.  Next we look at the need_rsp flag which indicates whether or not we need
 // to send a response.  If we do, then we formulate a response and send it.
 			if (param->write.handle == m_handle) {
+				esp_gatt_status_t retval = ESP_GATT_OK;
 				if (param->write.is_prep) {
 					m_value.addPart(param->write.value, param->write.len);
 				} else {
@@ -295,6 +297,11 @@ void BLECharacteristic::handleGATTServerEvent(
 				ESP_LOGD(LOG_TAG, " - Data: length: %d, data: %s", param->write.len, pHexData);
 				free(pHexData);
 
+				if (m_pCallbacks != nullptr && param->write.is_prep != true) {
+					retval = m_pCallbacks->onWrite(this,param); // Invoke the onWrite callback handler.
+				}
+
+
 				if (param->write.need_rsp) {
 					esp_gatt_rsp_t rsp;
 
@@ -307,15 +314,11 @@ void BLECharacteristic::handleGATTServerEvent(
 					esp_err_t errRc = ::esp_ble_gatts_send_response(
 							gatts_if,
 							param->write.conn_id,
-							param->write.trans_id, ESP_GATT_OK, &rsp);
+							param->write.trans_id, retval, &rsp);
 					if (errRc != ESP_OK) {
 						ESP_LOGE(LOG_TAG, "esp_ble_gatts_send_response: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 					}
 				} // Response needed
-
-				if (m_pCallbacks != nullptr && param->write.is_prep != true) {
-					m_pCallbacks->onWrite(this); // Invoke the onWrite callback handler.
-				}
 			} // Match on handles.
 			break;
 		} // ESP_GATTS_WRITE_EVT
@@ -747,7 +750,6 @@ void BLECharacteristicCallbacks::onRead(BLECharacteristic* pCharacteristic) {
 	ESP_LOGD("BLECharacteristicCallbacks", "<< onRead");
 } // onRead
 
-
 /**
  * @brief Callback function to support a write request.
  * @param [in] pCharacteristic The characteristic that is the source of the event.
@@ -755,6 +757,17 @@ void BLECharacteristicCallbacks::onRead(BLECharacteristic* pCharacteristic) {
 void BLECharacteristicCallbacks::onWrite(BLECharacteristic* pCharacteristic) {
 	ESP_LOGD("BLECharacteristicCallbacks", ">> onWrite: default");
 	ESP_LOGD("BLECharacteristicCallbacks", "<< onWrite");
+} // onWrite
+
+/**
+ * @brief Callback function to support a write request with custom GATTS status code... can be used to implement object transfer protocol
+ * @param [out] esp_gatt_status_t GATTS_STATUS code in the response
+ * @param [in] pCharacteristic The characteristic that is the source of the event.
+ * @param [in] param the context of the write
+ */
+esp_gatt_status_t BLECharacteristicCallbacks::onWrite(BLECharacteristic* pCharacteristic, esp_ble_gatts_cb_param_t* param) {
+	this->onRead(pCharacteristic);
+	return ESP_GATT_OK;
 } // onWrite
 
 #endif /* CONFIG_BT_ENABLED */
