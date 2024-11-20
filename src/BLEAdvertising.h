@@ -30,6 +30,7 @@ public:
 	void setPartialServices(BLEUUID uuid);
 	void setServiceData(BLEUUID uuid, std::string data);
 	void setShortName(std::string name);
+	void setTXPower(uint8_t TXPower);
 	void        addData(std::string data);  // Add data to the payload.
 	std::string getPayload();               // Retrieve the current advert payload.
 
